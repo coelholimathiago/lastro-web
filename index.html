@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lastro</title>
+<meta name="description" content="Hábitos por troca: bons hábitos geram calorias, dinheiro e tempo; prazeres custam.">
+<meta id="cor-tema" name="theme-color" content="#FAFAF7">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Lastro">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<script>
+  // aplica o tema salvo antes de pintar, sem piscar; o padrão é o claro
+  var t = 'light';
+  try { t = localStorage.getItem('lastro-tema-v2') || 'light'; } catch (e) {}
+  if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+</script>
+<script type="module" src="app.js"></script>
+</head>
+<body class="sem-faixa">
+<div id="faixa"></div>
+<div class="app">
+<main id="tela" tabindex="-1"><div class="carregando" aria-label="Carregando"><div></div><div></div><div></div></div></main>
+</div>
+<nav id="nav" class="nav" aria-label="Navegação principal"></nav>
+<div id="toast" role="status" aria-live="polite"></div>
+<noscript><p style="padding:16px">O Lastro precisa de JavaScript ligado.</p></noscript>
+</body>
+</html>
