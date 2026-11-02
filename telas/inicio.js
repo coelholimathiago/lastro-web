@@ -82,16 +82,18 @@ ${escolhidas.length
   // ---- hoje em anéis
   const tiles = [];
   const prev = previsaoDia(garmin, H);
-  if (hoje && prev) {
-    // hoje: a mesma conta do Dia — gasto previsto − déficit = o que dá para comer; o anel mostra quanto já foi
-    const orc = Math.max(0, prev.previsto - Number(hoje.deficit_meta));
+  if (hoje && hoje.gasto_kcal !== null && prev) {
+    // centro: o crédito real até agora (o mesmo do Dia); embaixo, separada, a previsão até a meia-noite
+    const orc = Math.max(0, Number(hoje.gasto_kcal) - Number(hoje.deficit_meta));
     const comeu = Number(hoje.consumo_kcal);
-    const pode = orc - comeu;
-    const cor = pode < 0 ? 'var(--no)' : 'var(--cal)';
+    const cred = Number(hoje.credito_kcal);
+    const pode = prev.previsto - comeu - Number(hoje.deficit_meta);
+    const cor = cred < 0 ? 'var(--no)' : 'var(--cal)';
     const arred = (v) => Math.round(v / 10) * 10;
     tiles.push(tile('cal', 'Calorias', anel({ pct: orc > 0 ? comeu / orc : 1, cor, trilho: 'var(--cal-soft)', tam: 84, esp: 9,
-      centro: `<span class="medio num" style="color:${cor}">${pode < 0 ? MENOS : '~'}${fmt(arred(Math.abs(pode)))}</span><span class="mini">${pode < 0 ? 'passou' : 'pode comer'}</span>`,
-      rotulo: `Comeu ${fmt(comeu)} de cerca de ${fmt(orc)} kcal previstas para hoje` }), `comeu ${fmt(comeu)} de ~${fmt(arred(orc))}`));
+      centro: `<span class="medio num" style="color:${cor}">${fNum(cred, { sinal: true })}</span><span class="mini">até agora</span>`,
+      rotulo: `Crédito real até agora ${fNum(cred, { sinal: true })} kcal; pela previsão ${pode >= 0 ? 'ainda pode comer' : 'vai passar'} cerca de ${fmt(arred(Math.abs(pode)))}` }),
+      `previsão: ${pode >= 0 ? `pode comer ~${fmt(arred(pode))}` : `passa ~${fmt(arred(-pode))}`}`));
   } else if (hoje && hoje.gasto_kcal !== null) {
     const orc = Number(hoje.gasto_kcal) - Number(hoje.deficit_meta);
     const p = orc > 0 ? Number(hoje.consumo_kcal) / orc : 1;
@@ -205,7 +207,7 @@ ${conselho}
 <section class="card" aria-labelledby="hoje-tit">
 <div class="card-cab"><h2 id="hoje-tit">Hoje</h2><a class="lado" href="#/dia" style="display:flex;align-items:center;gap:4px;min-height:44px;margin:-8px 0">ver o dia${ic.seta(14)}</a></div>
 <div class="hoje-aneis">${tiles.join('')}</div>
-<span class="nota">Calorias: quanto ainda dá para comer hoje (gasto previsto − déficit − o que já comeu). Dinheiro: quanto do teto do dia já foi. Tempo: parte produtiva do dia. O crédito entra no banco quando o dia fecha.</span>
+<span class="nota">Calorias: no centro, o crédito real até agora (gasto do Garmin − comeu − déficit); embaixo, a previsão até a meia-noite. Dinheiro: quanto do teto do dia já foi. Tempo: parte produtiva do dia. O crédito entra no banco quando o dia fecha.</span>
 </section>
 
 ${compsHtml}

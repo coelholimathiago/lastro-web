@@ -1,7 +1,7 @@
 // Dia: data navegável, as três moedas com a conta e a barra, listas com excluir, hábitos do Garmin e manuais.
 
-import { hojeBR, addDias, dataLonga, esc, ic, anel, fNum, fReais, fDuracao, fFator, fmt, pct, MENOS } from '../ui.js';
-import { previsaoDia, contaLinhas } from './previsao.js';
+import { hojeBR, addDias, dataLonga, quandoFoi, esc, ic, anel, fNum, fReais, fDuracao, fFator, fmt, pct, MENOS } from '../ui.js';
+import { previsaoDia, contaLinhas, contasDeHoje } from './previsao.js';
 import { chipGarmin, ligarSincronizar } from './sincronizar.js';
 
 const tracejado = (tipo, data, rot) =>
@@ -45,22 +45,10 @@ export async function montar({ api, rota }) {
   // dias fechados usam o gasto real do Garmin.
   let calConta, calBarra = '';
   const prev = ehHoje ? previsaoDia(garmin8, H) : null;
-  const arred = (v) => Math.round(v / 10) * 10;
   const detGarmin = g && g.calorias_bmr !== null && g.calorias_ativas !== null ? `basal ${fmt(g.calorias_bmr)} + ativas ${fmt(g.calorias_ativas)}` : '';
-  if (prev) {
-    const orc = prev.previsto - deficit;
-    const pode = orc - consumo;
-    calConta = contaLinhas([
-      { rot: 'Gasto previsto do dia', v: fmt(prev.previsto), nota: `até agora ${gastoK !== null ? fmt(gastoK) : '—'} no Garmin · média dos últimos ${prev.dias} dias: ${fmt(prev.mediaTotal)}` },
-      { rot: 'Já comeu', v: `${MENOS} ${fmt(consumo)}` },
-      { rot: 'Meta de déficit', v: `${MENOS} ${fmt(deficit)}` },
-    ], pode >= 0
-      ? { rot: 'Ainda pode comer hoje', v: `~${fmt(arred(pode))} kcal`, cls: 'cor-cal' }
-      : { rot: 'Passou do previsto', v: `~${fmt(arred(-pode))} kcal`, cls: 'cor-no' });
-    calBarra = pode >= 0
-      ? pilha([{ v: consumo, cor: 'var(--track)', rot: 'já comeu' }, { v: pode, cor: 'var(--cal)', rot: 'ainda pode comer' }, { v: deficit, cor: 'var(--cal-soft)', rot: 'déficit' }])
-      : pilha([{ v: Math.max(0, orc), cor: 'var(--track)', rot: 'dentro do previsto' }, { v: -pode, cor: 'var(--no)', rot: 'passou' }, { v: deficit, cor: 'var(--cal-soft)', rot: 'déficit' }]);
-    calConta += `<span class="nota">Previsão = basal de um dia inteiro + as ativas de hoje + o seu ritmo médio de ativas nas horas que faltam. O crédito do dia sai à meia-noite, com o gasto real.</span>`;
+  if (ehHoje) {
+    // hoje: duas contas separadas, o real até agora e a previsão até a meia-noite
+    calConta = contasDeHoje({ g, consumo, deficit, prev, quando: sinc ? quandoFoi(sinc.sincronizado_em) : '' });
   } else if (gastoK !== null) {
     const cred = Number(c.credito_kcal);
     calConta = contaLinhas([
