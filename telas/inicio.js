@@ -4,6 +4,8 @@
 import { hojeBR, addDias, dataLonga, quandoFoi, esc, ic, anel, barra, linha, fNum, fReais, fDuracao, fmt, clamp01, MENOS } from '../ui.js';
 import { bancoHtml, avaliar } from './comum.js';
 import { cartoesConselheiro, ligarConselheiro } from './conselheiro.js';
+import { previsaoDia, blocoPrevisao } from './previsao.js';
+import { ligarSincronizar } from './sincronizar.js';
 import { segundaDe, intervaloSemana, livreDe, taxasDiarias, custoEfetivo, cartaoRecompensa, compromissoHtml } from './semana.js';
 
 let estado = null;
@@ -63,7 +65,7 @@ ${escolhidas.length
   const pilulas = [
     aguardando ? `<span class="pilula hab">${ic.relogio(14)}${aguardando === 1 ? '1 dia aguarda o Garmin' : `${aguardando} dias aguardam o Garmin`}</span>` : '',
     resK || resR ? `<a class="pilula" href="#/semana">${ic.cadeado(14)}reservado ${[resK ? `${fNum(resK)} kcal` : '', resR ? fReais(resR) : ''].filter(Boolean).join(' · ')}</a>` : '',
-    `<span class="pilula">${ic.relogioPulso(14)}Garmin ${sinc ? 'sincronizou ' + quandoFoi(sinc.sincronizado_em) : 'ainda não sincronizou'}</span>`,
+    `<button type="button" class="pilula pilula-sinc" data-sincronizar aria-label="Atualizar dados do Garmin">${ic.relogioPulso(14)}Garmin ${sinc ? 'sincronizou ' + quandoFoi(sinc.sincronizado_em) : 'ainda não sincronizou'} · <u>atualizar</u></button>`,
   ].join('');
 
   // ---- trocas disponíveis: com o plano, pelo saldo livre e o multiplicador da semana
@@ -193,6 +195,7 @@ ${conselho}
 <section class="card" aria-labelledby="hoje-tit">
 <div class="card-cab"><h2 id="hoje-tit">Hoje</h2><a class="lado" href="#/dia" style="display:flex;align-items:center;gap:4px;min-height:44px;margin:-8px 0">ver o dia${ic.seta(14)}</a></div>
 <div class="hoje-aneis">${tiles.join('')}</div>
+${hoje ? blocoPrevisao(previsaoDia(garmin, H), hoje.consumo_kcal, hoje.deficit_meta) : ''}
 <span class="nota">Anel de calorias e dinheiro: quanto do orçamento do dia já foi. Tempo: parte produtiva do dia. O crédito entra no banco quando o dia fecha${hoje && hoje.gasto_kcal !== null ? '' : ' e o Garmin sincroniza'}.</span>
 </section>
 
@@ -229,6 +232,7 @@ ${vicios.length ? `<section class="card tmp" aria-labelledby="vicio-tit">
 
 export function ligar(raiz, ctx) {
   if (estado && estado.sugs.length) ligarConselheiro(raiz, ctx, estado.sugs);
+  ligarSincronizar(raiz, ctx);
 }
 
 function tile(cls, nome, anelHtml, det) {

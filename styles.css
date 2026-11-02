@@ -351,6 +351,25 @@ main:focus { outline: none; }
 .conselho-botoes { display: flex; gap: 8px; margin-top: 4px; }
 .conselho-aplicar { background: var(--hab); color: var(--on-ink); border-color: var(--hab); min-height: 40px; font-size: 13px; }
 
+/* ------------------------------------------------ previsão do dia e atualizar Garmin */
+
+.previsao { border-radius: 14px; padding: 12px 14px; background: color-mix(in srgb, var(--card) 70%, transparent); display: flex; flex-direction: column; gap: 4px; }
+.previsao p { margin: 0; font-size: 13px; line-height: 1.5; }
+.previsao-cab { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--cal); }
+.sinc-botao { align-self: flex-start; }
+dialog.sinc { border: none; border-radius: 22px; padding: 0; width: min(92vw, 400px); background: var(--card); color: var(--ink); }
+dialog.sinc::backdrop { background: rgba(0, 0, 0, .45); }
+.sinc-corpo { padding: 22px 20px 18px; display: flex; flex-direction: column; gap: 10px; }
+.sinc-corpo h2 { font-size: 19px; }
+.sinc-corpo p { margin: 0; font-size: 14px; line-height: 1.5; }
+.sinc-passos { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; line-height: 1.45; }
+.sinc-botoes { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+.sinc-icone { width: 52px; height: 52px; border-radius: 16px; display: flex; align-items: center; justify-content: center; background: var(--tmp-tint); color: var(--tmp); }
+.sinc-icone.ok { background: var(--din-tint); color: var(--din); }
+.sinc-icone.no { background: var(--no-tint); color: var(--no); }
+.sinc-icone.girando svg { animation: girar 1.4s linear infinite; }
+@keyframes girar { to { transform: rotate(360deg); } }
+
 /* ------------------------------------------------ navegador (tela larga) */
 
 @media (min-width: 900px) {
@@ -399,3 +418,4 @@ main:focus { outline: none; }
 .opcao:has(input:focus-visible) { outline: 2px solid var(--tmp); outline-offset: 2px; }
 label.btn:has(input:focus-visible) { outline: 2px solid var(--tmp); outline-offset: 2px; }
 code { font-size: 12px; background: var(--card); padding: 1px 6px; border-radius: 6px; }
+.pilula-sinc { border: none; cursor: pointer; font-family: inherit; }

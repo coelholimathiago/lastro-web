@@ -137,6 +137,17 @@ export async function criar(url, chave) {
       if (m.id) return ok(await sb.from('meta').update(m).eq('id', m.id).select().single());
       return ok(await sb.from('meta').insert(m).select().single());
     },
+    // ---- atualizar o Garmin: a função sincronizar-garmin dispara a coleta no GitHub Actions
+    async sincronizarGarmin() {
+      const { data, error } = await sb.functions.invoke('sincronizar-garmin', { body: {} });
+      if (error) {
+        let msg = 'Não deu para pedir a coleta agora.';
+        try { const c = await error.context.json(); if (c && c.erro) msg = c.erro; } catch { /* corpo não é JSON */ }
+        throw new Error(msg);
+      }
+      return data;
+    },
+
     // ---- plano financeiro guiado (docs/plano-financeiro.md)
     async planos() {
       return ok(await sb.from('plano_financeiro').select('*').neq('status', 'arquivado').order('criado_em', { ascending: false }));

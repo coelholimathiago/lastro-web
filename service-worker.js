@@ -1,13 +1,13 @@
 // Guarda a casca do app para abrir sem rede. Nunca cacheia chamadas do Supabase.
 
-const VERSAO = 'lastro-v8';
+const VERSAO = 'lastro-v9';
 const CASCA = [
   './', './index.html', './styles.css', './manifest.webmanifest',
   './css/inicio.css', './css/semana.css', './css/metas.css', './css/recompensas.css', './css/plano.css',
   './app.js', './api.js', './api-demo.js', './api-supabase.js', './config.js', './ui.js',
   './telas/comum.js', './telas/inicio.js', './telas/dia.js', './telas/liberar.js', './telas/registrar.js',
   './telas/ajustes.js', './telas/login.js', './telas/semana.js', './telas/metas.js', './telas/recompensa.js',
-  './telas/conselheiro.js', './telas/plano.js', './plano/simulacao.js',
+  './telas/conselheiro.js', './telas/plano.js', './plano/simulacao.js', './telas/previsao.js', './telas/sincronizar.js',
   './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png',
 ];
 // bibliotecas e fontes de endereço fixo (versão no caminho): cache primeiro

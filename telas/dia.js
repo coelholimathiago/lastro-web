@@ -1,6 +1,8 @@
 // Dia: data navegável, as três moedas com a conta e a barra, listas com excluir, hábitos do Garmin e manuais.
 
 import { hojeBR, addDias, dataLonga, esc, ic, anel, fNum, fReais, fDuracao, fFator, fmt, pct, MENOS } from '../ui.js';
+import { previsaoDia, blocoPrevisao } from './previsao.js';
+import { botaoSincronizar, ligarSincronizar } from './sincronizar.js';
 
 const tracejado = (tipo, data, rot) =>
   `<a class="btn tracejado" href="#/registrar?tipo=${tipo}&data=${data}" aria-label="Registrar ${rot.toLowerCase()}">${ic.mais(16)}${rot}</a>`;
@@ -19,11 +21,12 @@ export async function montar({ api, rota }) {
   let D = rota.q.get('data') || H;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(D) || D > H) D = H;
 
-  const [c, refeicoes, gastos, tempos, atividadesG, g, habitos, regra, banco] = await Promise.all([
+  const ehHoje = D === H;
+  const [c, refeicoes, gastos, tempos, atividadesG, g, habitos, regra, banco, garmin8] = await Promise.all([
     api.creditoDia(D), api.refeicoes(D), api.gastos(D), api.tempos(D), api.garminAtividades(D),
     api.garminDia(D), api.habitosDia(D), api.regras(D), api.banco(),
+    ehHoje ? api.garminPeriodo(addDias(H, -8), H).catch(() => []) : Promise.resolve([]),
   ]);
-  const ehHoje = D === H;
   const fator = regra ? Number(regra.fator_vicio) : 2.3;
 
   // ---- situação do dia
@@ -48,6 +51,7 @@ export async function montar({ api, rota }) {
     if (g && g.calorias_bmr !== null && g.calorias_ativas !== null) {
       calConta += `<span class="nota">Gasto = basal ${fmt(g.calorias_bmr)} + ativas ${fmt(g.calorias_ativas)}${ehHoje ? '. Hoje é parcial: o basal cresce ao longo do dia e o total fecha à meia-noite' : ''}.</span>`;
     }
+    if (ehHoje) calConta += blocoPrevisao(previsaoDia(garmin8, H), consumo, deficit) + botaoSincronizar();
     calBarra = cred >= 0
       ? pilha([{ v: consumo, cor: 'var(--track)', rot: 'consumo' }, { v: deficit, cor: 'var(--cal-soft)', rot: 'déficit' }, { v: cred, cor: 'var(--cal)', rot: 'crédito' }])
       : pilha([{ v: Math.max(0, gastoK - deficit), cor: 'var(--track)', rot: 'consumo no orçamento' }, { v: -cred, cor: 'var(--no)', rot: 'passou do orçamento' }, { v: deficit, cor: 'var(--cal-soft)', rot: 'déficit' }]);
@@ -57,6 +61,7 @@ export async function montar({ api, rota }) {
 <div><span class="v num">${MENOS} ${fmt(consumo)}</span><span class="r">consumo</span></div>
 <div><span class="v num">${MENOS} ${fmt(deficit)}</span><span class="r">déficit meta</span></div></div>
 <span class="nota">O gasto de calorias chega com o Garmin; até lá o crédito fica em aberto.</span>`;
+    if (ehHoje) calConta += blocoPrevisao(previsaoDia(garmin8, H), consumo, deficit) + botaoSincronizar();
   }
   const listaRef = refeicoes.length
     ? refeicoes.map((r) => `<div class="item"><span class="txt"><span>${esc(r.descricao)}</span>${r.hora ? `<small>${esc(String(r.hora).slice(0, 5))}</small>` : ''}</span><span class="val">${fmt(r.kcal)} kcal</span>${excluir('refeicao', r.id, r.descricao)}</div>`).join('')
@@ -185,6 +190,7 @@ ${extras ? `<div class="mosaico">${extras}</div>` : ''}
 
 export function ligar(main, { api, rota, recarregar, toast }) {
   const D = rota.q.get('data') || hojeBR();
+  ligarSincronizar(main, { api, recarregar, toast });
   main.addEventListener('click', async (ev) => {
     const b = ev.target.closest('[data-acao]');
     if (!b) return;
