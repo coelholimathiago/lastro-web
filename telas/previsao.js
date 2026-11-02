@@ -1,26 +1,47 @@
 // Calorias de hoje em duas contas separadas:
 //   até agora (real): o gasto que o Garmin já registrou − o que comeu − a meta de déficit
-//   até a meia-noite (previsão): o gasto previsto para o dia inteiro − o que comeu − a meta de déficit
-// A previsão vem dos últimos 7 dias completos do Garmin.
+//   até a meia-noite (previsão): o gasto de hoje + o gasto em repouso nas horas que faltam − comeu − déficit
 
-import { fmt, fNum, horaBR, MENOS } from '../ui.js';
+import { fmt, fNum, FUSO, MENOS } from '../ui.js';
 
-// garmin: linhas de garmin_dia (inclui as de hoje e as anteriores); H: hoje AAAA-MM-DD
+// hora do dia (0–24, com fração) de um instante, no fuso de São Paulo
+function horaDoDia(iso) {
+  const p = new Intl.DateTimeFormat('en-GB', { timeZone: FUSO, hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(new Date(iso));
+  const v = (t) => Number(p.find((x) => x.type === t).value);
+  return (v('hour') % 24) + v('minute') / 60;
+}
+
+// garmin: linhas de garmin_dia (inclui as de hoje e as anteriores); H: hoje AAAA-MM-DD.
+// Previsão = o que já gastou hoje + o ritmo de repouso de hoje (basal até agora ÷ horas passadas) × as horas que faltam.
+// Exercício novo depois disso não entra: se treinar de novo, o gasto real sobe.
 export function previsaoDia(garmin, H) {
+  const hoje = (garmin || []).find((g) => g.data === H);
+  if (hoje && hoje.calorias_total !== null && hoje.calorias_bmr !== null && (hoje.dados_ate || hoje.sincronizado_em)) {
+    // as horas passadas contam até o momento dos dados: até onde o relógio já mandou (dados_ate, hora local);
+    // sem essa informação, a hora da coleta
+    const horas = hoje.dados_ate
+      ? Number(String(hoje.dados_ate).slice(11, 13)) + Number(String(hoje.dados_ate).slice(14, 16)) / 60
+      : horaDoDia(hoje.sincronizado_em);
+    if (horas >= 1) {
+      const porHora = Number(hoje.calorias_bmr) / horas;
+      const faltam = Math.max(0, 24 - horas);
+      const repousoRestante = Math.round(porHora * faltam);
+      const gastoAgora = Math.round(Number(hoje.calorias_total));
+      return {
+        previsto: gastoAgora + repousoRestante, gastoAgora, repousoRestante,
+        horas: Math.round(horas * 10) / 10, faltam: Math.round(faltam * 10) / 10, porHora: Math.round(porHora),
+        ativasHoje: Math.round(Number(hoje.calorias_ativas || 0)), fonte: 'hoje',
+      };
+    }
+  }
+  // sem dados de hoje: a média dos últimos 7 dias completos
   const completos = (garmin || [])
-    .filter((g) => g.data < H && g.calorias_total !== null && g.calorias_bmr !== null && g.calorias_ativas !== null)
+    .filter((g) => g.data < H && g.calorias_total !== null)
     .sort((a, b) => a.data.localeCompare(b.data))
     .slice(-7);
   if (!completos.length) return null;
-  const media = (k) => completos.reduce((s, g) => s + Number(g[k] || 0), 0) / completos.length;
-  const hoje = (garmin || []).find((g) => g.data === H);
-  const [h, m] = horaBR().split(':').map(Number);
-  const falta = Math.max(0, (24 * 60 - (h * 60 + m)) / (24 * 60));
-  // basal de um dia inteiro + o que já mexeu hoje + o ritmo médio de ativas nas horas que faltam
-  const bmrDia = Math.round(media('calorias_bmr'));
-  const ativasHoje = hoje ? Math.round(Number(hoje.calorias_ativas || 0)) : 0;
-  const ativasRestantes = Math.round(media('calorias_ativas') * falta);
-  return { previsto: bmrDia + ativasHoje + ativasRestantes, bmrDia, ativasHoje, ativasRestantes, dias: completos.length };
+  const media = Math.round(completos.reduce((s, g) => s + Number(g.calorias_total), 0) / completos.length);
+  return { previsto: media, dias: completos.length, fonte: 'media' };
 }
 
 // A conta em linhas: cada parcela numa linha (rótulo à esquerda, valor à direita) e o resultado embaixo,
@@ -56,15 +77,23 @@ export function contasDeHoje({ g, consumo, deficit, prev, quando }) {
   let previsao = '';
   if (prev) {
     const pode = prev.previsto - consumo - deficit;
-    previsao = `<div class="cal-bloco cal-prev">
-<div class="cal-bloco-cab"><b>Até a meia-noite</b><span class="cal-etiqueta">previsão</span></div>
+    const linhasGasto = prev.fonte === 'hoje'
+      ? [
+          { rot: `Gasto até agora`, v: fmt(prev.gastoAgora), nota: `${fmt(prev.horas, prev.horas % 1 ? 1 : 0)} h de dia, com ${fmt(prev.ativasHoje)} kcal de atividade` },
+          { rot: `Repouso nas ${fmt(prev.faltam, prev.faltam % 1 ? 1 : 0)} h que faltam`, v: `+ ${fmt(prev.repousoRestante)}`, nota: `${fmt(prev.porHora)} kcal por hora, o seu ritmo em repouso hoje` },
+        ]
+      : [{ rot: 'Gasto previsto do dia', v: fmt(prev.previsto), nota: `média dos últimos ${prev.dias} dias (ainda sem dados de hoje)` }];
+    previsao = `<div class="cal-prev">
+<div class="cal-prev-cab"><span>Até a meia-noite</span><span class="cal-prev-etq">previsão</span></div>
+<div class="cal-prev-res"><span class="num ${pode >= 0 ? 'ok' : 'no'}">${pode >= 0 ? '~' : MENOS + '~'}${fmt(arred(Math.abs(pode)))}</span><small>kcal · ${pode >= 0 ? 'ainda pode comer hoje' : 'acima do previsto'}</small></div>
 ${contaLinhas([
-    { rot: 'Gasto previsto do dia', v: fmt(prev.previsto),
-      nota: `${fmt(prev.bmrDia)} basal do dia (média de ${prev.dias} dias) + ${fmt(prev.ativasHoje)} ativas de hoje + ${fmt(prev.ativasRestantes)} ativas previstas até a meia-noite` },
+    ...linhasGasto,
+    { rot: '= Gasto previsto do dia', v: fmt(prev.previsto) },
     comeu, meta,
   ], pode >= 0
-    ? { rot: 'Ainda pode comer', v: `~${fmt(arred(pode))} kcal`, cls: 'cor-cal' }
-    : { rot: 'Vai passar', v: `~${fmt(arred(-pode))} kcal`, cls: 'cor-no' })}
+    ? { rot: 'Ainda pode comer', v: `~${fmt(arred(pode))} kcal`, cls: 'ok' }
+    : { rot: 'Acima do previsto', v: `~${fmt(arred(-pode))} kcal`, cls: 'no' })}
+<span class="cal-prev-nota">Se treinar de novo hoje, o gasto sobe e sobra mais.</span>
 </div>`;
   }
 

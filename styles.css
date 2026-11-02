@@ -371,8 +371,21 @@ main:focus { outline: none; }
 .cal-bloco-cab { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 14px; }
 .cal-etiqueta { font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 999px; background: color-mix(in srgb, var(--ink) 8%, transparent); color: var(--sub); }
 .cal-etiqueta.real { background: var(--cal); color: var(--on-ink); }
-.cal-prev { border: 1.5px dashed color-mix(in srgb, var(--cal) 45%, transparent); border-radius: 14px; padding: 10px 12px; margin-top: 6px; }
-.cal-prev .cl-res .cl-v { font-size: 19px; }
+/* previsão até a meia-noite: card escuro, destacado dentro do card de calorias */
+.cal-prev { background: var(--ink); color: var(--on-ink); border-radius: 18px; padding: 14px 16px 12px; margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.cal-prev-cab { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 600; }
+.cal-prev-etq { font-size: 11px; font-weight: 500; padding: 2px 9px; border-radius: 999px; background: color-mix(in srgb, var(--cal) 35%, transparent); color: var(--on-ink); }
+.cal-prev-res { display: flex; align-items: baseline; gap: 8px; margin: 4px 0 6px; }
+.cal-prev-res .num { font-size: 34px; font-weight: 600; letter-spacing: -0.03em; }
+.cal-prev-res small { font-size: 12px; color: color-mix(in srgb, var(--on-ink) 70%, transparent); }
+.cal-prev .ok { color: color-mix(in srgb, var(--cal) 55%, var(--on-ink)); }
+.cal-prev .no { color: color-mix(in srgb, var(--no) 60%, var(--on-ink)); }
+.cal-prev .cl-linha { font-size: 13px; padding: 5px 0; }
+.cal-prev .cl-v { font-size: 15px; }
+.cal-prev .cl-rot small { color: color-mix(in srgb, var(--on-ink) 62%, transparent); }
+.cal-prev .cl-res { border-top-color: color-mix(in srgb, var(--on-ink) 28%, transparent); }
+.cal-prev .cl-res .cl-v { font-size: 18px; }
+.cal-prev-nota { font-size: 11px; color: color-mix(in srgb, var(--on-ink) 62%, transparent); }
 
 /* conta em linhas: parcelas em cima, resultado embaixo depois de um traço */
 .conta-linhas { display: flex; flex-direction: column; }

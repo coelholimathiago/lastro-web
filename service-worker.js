@@ -1,6 +1,6 @@
 // Guarda a casca do app para abrir sem rede. Nunca cacheia chamadas do Supabase.
 
-const VERSAO = 'lastro-v11';
+const VERSAO = 'lastro-v12';
 const CASCA = [
   './', './index.html', './styles.css', './manifest.webmanifest',
   './css/inicio.css', './css/semana.css', './css/metas.css', './css/recompensas.css', './css/plano.css',
