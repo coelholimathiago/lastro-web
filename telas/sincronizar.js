@@ -10,6 +10,13 @@ export function botaoSincronizar(rotulo = 'Atualizar dados do Garmin') {
   return `<button type="button" class="btn tracejado sinc-botao" data-sincronizar>${ic.troca(16)}${esc(rotulo)}</button>`;
 }
 
+// Chip do topo da tela: vale para o dia todo e para todos os cards
+export function chipGarmin(sinc) {
+  const quando = sinc ? quandoFoi(sinc.sincronizado_em) : 'sem dados';
+  return `<button type="button" class="sinc-chip" data-sincronizar aria-label="Atualizar dados do Garmin (última vez ${esc(quando)})">
+${ic.relogioPulso(14)}<span>Garmin · ${esc(quando)}</span>${ic.troca(14)}</button>`;
+}
+
 export function ligarSincronizar(raiz, { api, recarregar, toast }) {
   if (typeof api.sincronizarGarmin !== 'function') return;
   raiz.querySelectorAll('[data-sincronizar]').forEach((b) => b.addEventListener('click', (ev) => {

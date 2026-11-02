@@ -37,4 +37,13 @@ export function blocoPrevisao(prev, consumo, deficit) {
 </div>`;
 }
 
+// A conta em linhas: cada parcela numa linha (rótulo à esquerda, valor à direita) e o resultado embaixo,
+// separado por um traço — para a conta ser óbvia de ler
+export function contaLinhas(linhas, resultado) {
+  return `<div class="conta-linhas">
+${linhas.map((l) => `<div class="cl-linha"><span class="cl-rot">${l.rot}${l.nota ? `<small>${l.nota}</small>` : ''}</span><span class="cl-v num">${l.v}</span></div>`).join('')}
+<div class="cl-linha cl-res"><span class="cl-rot">= ${resultado.rot}</span><span class="cl-v num ${resultado.cls || ''}">${resultado.v}</span></div>
+</div>`;
+}
+
 export { fNum };

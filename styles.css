@@ -357,6 +357,23 @@ main:focus { outline: none; }
 .previsao p { margin: 0; font-size: 13px; line-height: 1.5; }
 .previsao-cab { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--cal); }
 .sinc-botao { align-self: flex-start; }
+.sinc-chip {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border-radius: 999px;
+  border: 1px solid var(--line2); background: var(--card); color: var(--ink); font-size: 12px; font-family: inherit; cursor: pointer;
+  white-space: nowrap; flex-shrink: 0;
+}
+.sinc-chip:hover { background: var(--soft); }
+.sinc-chip svg:last-child { color: var(--sub); }
+.navdia .meio .sinc-chip { margin-top: 6px; }
+
+/* conta em linhas: parcelas em cima, resultado embaixo depois de um traço */
+.conta-linhas { display: flex; flex-direction: column; }
+.cl-linha { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 6px 0; font-size: 14px; }
+.cl-rot { display: flex; flex-direction: column; min-width: 0; }
+.cl-rot small { font-size: 11px; color: var(--sub); }
+.cl-v { font-size: 17px; font-weight: 500; white-space: nowrap; }
+.cl-res { border-top: 1.5px solid color-mix(in srgb, var(--ink) 25%, transparent); margin-top: 4px; padding-top: 10px; font-weight: 600; }
+.cl-res .cl-v { font-size: 22px; font-weight: 600; }
 dialog.sinc { border: none; border-radius: 22px; padding: 0; width: min(92vw, 400px); background: var(--card); color: var(--ink); }
 dialog.sinc::backdrop { background: rgba(0, 0, 0, .45); }
 .sinc-corpo { padding: 22px 20px 18px; display: flex; flex-direction: column; gap: 10px; }

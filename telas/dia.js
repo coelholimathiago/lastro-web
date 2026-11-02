@@ -1,8 +1,8 @@
 // Dia: data navegável, as três moedas com a conta e a barra, listas com excluir, hábitos do Garmin e manuais.
 
 import { hojeBR, addDias, dataLonga, esc, ic, anel, fNum, fReais, fDuracao, fFator, fmt, pct, MENOS } from '../ui.js';
-import { previsaoDia, blocoPrevisao } from './previsao.js';
-import { botaoSincronizar, ligarSincronizar } from './sincronizar.js';
+import { previsaoDia, contaLinhas } from './previsao.js';
+import { chipGarmin, ligarSincronizar } from './sincronizar.js';
 
 const tracejado = (tipo, data, rot) =>
   `<a class="btn tracejado" href="#/registrar?tipo=${tipo}&data=${data}" aria-label="Registrar ${rot.toLowerCase()}">${ic.mais(16)}${rot}</a>`;
@@ -22,10 +22,11 @@ export async function montar({ api, rota }) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(D) || D > H) D = H;
 
   const ehHoje = D === H;
-  const [c, refeicoes, gastos, tempos, atividadesG, g, habitos, regra, banco, garmin8] = await Promise.all([
+  const [c, refeicoes, gastos, tempos, atividadesG, g, habitos, regra, banco, garmin8, sinc] = await Promise.all([
     api.creditoDia(D), api.refeicoes(D), api.gastos(D), api.tempos(D), api.garminAtividades(D),
     api.garminDia(D), api.habitosDia(D), api.regras(D), api.banco(),
     ehHoje ? api.garminPeriodo(addDias(H, -8), H).catch(() => []) : Promise.resolve([]),
+    api.ultimaSinc().catch(() => null),
   ]);
   const fator = regra ? Number(regra.fator_vicio) : 2.3;
 
@@ -40,28 +41,42 @@ export async function montar({ api, rota }) {
   const consumo = c ? Number(c.consumo_kcal) : refeicoes.reduce((a, r) => a + Number(r.kcal), 0);
   const deficit = c ? Number(c.deficit_meta) : (regra ? regra.deficit_meta : 500);
   const gastoK = c && c.gasto_kcal !== null ? Number(c.gasto_kcal) : null;
+  // A conta em linhas, de cima para baixo. Hoje usa a previsão do dia (o gasto real só fecha à meia-noite);
+  // dias fechados usam o gasto real do Garmin.
   let calConta, calBarra = '';
-  if (gastoK !== null) {
+  const prev = ehHoje ? previsaoDia(garmin8, H) : null;
+  const arred = (v) => Math.round(v / 10) * 10;
+  const detGarmin = g && g.calorias_bmr !== null && g.calorias_ativas !== null ? `basal ${fmt(g.calorias_bmr)} + ativas ${fmt(g.calorias_ativas)}` : '';
+  if (prev) {
+    const orc = prev.previsto - deficit;
+    const pode = orc - consumo;
+    calConta = contaLinhas([
+      { rot: 'Gasto previsto do dia', v: fmt(prev.previsto), nota: `até agora ${gastoK !== null ? fmt(gastoK) : '—'} no Garmin · média dos últimos ${prev.dias} dias: ${fmt(prev.mediaTotal)}` },
+      { rot: 'Já comeu', v: `${MENOS} ${fmt(consumo)}` },
+      { rot: 'Meta de déficit', v: `${MENOS} ${fmt(deficit)}` },
+    ], pode >= 0
+      ? { rot: 'Ainda pode comer hoje', v: `~${fmt(arred(pode))} kcal`, cls: 'cor-cal' }
+      : { rot: 'Passou do previsto', v: `~${fmt(arred(-pode))} kcal`, cls: 'cor-no' });
+    calBarra = pode >= 0
+      ? pilha([{ v: consumo, cor: 'var(--track)', rot: 'já comeu' }, { v: pode, cor: 'var(--cal)', rot: 'ainda pode comer' }, { v: deficit, cor: 'var(--cal-soft)', rot: 'déficit' }])
+      : pilha([{ v: Math.max(0, orc), cor: 'var(--track)', rot: 'dentro do previsto' }, { v: -pode, cor: 'var(--no)', rot: 'passou' }, { v: deficit, cor: 'var(--cal-soft)', rot: 'déficit' }]);
+    calConta += `<span class="nota">Previsão = basal de um dia inteiro + as ativas de hoje + o seu ritmo médio de ativas nas horas que faltam. O crédito do dia sai à meia-noite, com o gasto real.</span>`;
+  } else if (gastoK !== null) {
     const cred = Number(c.credito_kcal);
-    calConta = `<div class="conta" style="grid-template-columns:repeat(4,minmax(0,1fr))">
-<div><span class="v num">${fmt(gastoK)}</span><span class="r">gasto Garmin</span></div>
-<div><span class="v num">${MENOS} ${fmt(consumo)}</span><span class="r">consumo</span></div>
-<div><span class="v num">${MENOS} ${fmt(deficit)}</span><span class="r">déficit meta</span></div>
-<div><span class="v res num ${cred < 0 ? 'cor-no' : 'cor-cal'}">${fNum(cred, { sinal: true })}</span><span class="r">crédito</span></div></div>`;
-    if (g && g.calorias_bmr !== null && g.calorias_ativas !== null) {
-      calConta += `<span class="nota">Gasto = basal ${fmt(g.calorias_bmr)} + ativas ${fmt(g.calorias_ativas)}${ehHoje ? '. Hoje é parcial: o basal cresce ao longo do dia e o total fecha à meia-noite' : ''}.</span>`;
-    }
-    if (ehHoje) calConta += blocoPrevisao(previsaoDia(garmin8, H), consumo, deficit) + botaoSincronizar();
+    calConta = contaLinhas([
+      { rot: ehHoje ? 'Gasto até agora (Garmin)' : 'Gasto do dia (Garmin)', v: fmt(gastoK), nota: detGarmin },
+      { rot: ehHoje ? 'Já comeu' : 'Comeu', v: `${MENOS} ${fmt(consumo)}` },
+      { rot: 'Meta de déficit', v: `${MENOS} ${fmt(deficit)}` },
+    ], { rot: 'Crédito do dia', v: `${fNum(cred, { sinal: true })} kcal`, cls: cred < 0 ? 'cor-no' : 'cor-cal' });
     calBarra = cred >= 0
-      ? pilha([{ v: consumo, cor: 'var(--track)', rot: 'consumo' }, { v: deficit, cor: 'var(--cal-soft)', rot: 'déficit' }, { v: cred, cor: 'var(--cal)', rot: 'crédito' }])
-      : pilha([{ v: Math.max(0, gastoK - deficit), cor: 'var(--track)', rot: 'consumo no orçamento' }, { v: -cred, cor: 'var(--no)', rot: 'passou do orçamento' }, { v: deficit, cor: 'var(--cal-soft)', rot: 'déficit' }]);
+      ? pilha([{ v: consumo, cor: 'var(--track)', rot: 'comeu' }, { v: deficit, cor: 'var(--cal-soft)', rot: 'déficit' }, { v: cred, cor: 'var(--cal)', rot: 'crédito' }])
+      : pilha([{ v: Math.max(0, gastoK - deficit), cor: 'var(--track)', rot: 'dentro do orçamento' }, { v: -cred, cor: 'var(--no)', rot: 'passou do orçamento' }, { v: deficit, cor: 'var(--cal-soft)', rot: 'déficit' }]);
   } else {
-    calConta = `<div class="conta" style="grid-template-columns:repeat(3,minmax(0,1fr))">
-<div><span class="v num">—</span><span class="r">gasto Garmin</span></div>
-<div><span class="v num">${MENOS} ${fmt(consumo)}</span><span class="r">consumo</span></div>
-<div><span class="v num">${MENOS} ${fmt(deficit)}</span><span class="r">déficit meta</span></div></div>
-<span class="nota">O gasto de calorias chega com o Garmin; até lá o crédito fica em aberto.</span>`;
-    if (ehHoje) calConta += blocoPrevisao(previsaoDia(garmin8, H), consumo, deficit) + botaoSincronizar();
+    calConta = contaLinhas([
+      { rot: 'Gasto do dia (Garmin)', v: '—', nota: 'ainda não chegou' },
+      { rot: 'Comeu', v: `${MENOS} ${fmt(consumo)}` },
+      { rot: 'Meta de déficit', v: `${MENOS} ${fmt(deficit)}` },
+    ], { rot: 'Crédito do dia', v: 'aguarda o Garmin', cls: 'cor-sub' });
   }
   const listaRef = refeicoes.length
     ? refeicoes.map((r) => `<div class="item"><span class="txt"><span>${esc(r.descricao)}</span>${r.hora ? `<small>${esc(String(r.hora).slice(0, 5))}</small>` : ''}</span><span class="val">${fmt(r.kcal)} kcal</span>${excluir('refeicao', r.id, r.descricao)}</div>`).join('')
@@ -148,7 +163,7 @@ export async function montar({ api, rota }) {
   return `<div class="tela">
 <div class="navdia">
 <a class="btn-icone" href="#/dia?data=${addDias(D, -1)}" aria-label="Dia anterior">${ic.voltar(18)}</a>
-<div class="meio"><span class="nota">${ehHoje ? 'hoje' : D === addDias(H, -1) ? 'ontem' : 'dia'}</span><h1>${esc(dataLonga(D))}</h1></div>
+<div class="meio"><span class="nota">${ehHoje ? 'hoje' : D === addDias(H, -1) ? 'ontem' : 'dia'}</span><h1>${esc(dataLonga(D))}</h1>${chipGarmin(sinc)}</div>
 ${ehHoje ? `<span class="btn-icone" aria-disabled="true" aria-label="Próximo dia">${ic.seta(18)}</span>` : `<a class="btn-icone" href="#/dia?data=${prox}" aria-label="Próximo dia">${ic.seta(18)}</a>`}
 </div>
 ${status}

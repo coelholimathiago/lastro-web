@@ -4,8 +4,8 @@
 import { hojeBR, addDias, dataLonga, quandoFoi, esc, ic, anel, barra, linha, fNum, fReais, fDuracao, fmt, clamp01, MENOS } from '../ui.js';
 import { bancoHtml, avaliar } from './comum.js';
 import { cartoesConselheiro, ligarConselheiro } from './conselheiro.js';
-import { previsaoDia, blocoPrevisao } from './previsao.js';
-import { ligarSincronizar } from './sincronizar.js';
+import { previsaoDia } from './previsao.js';
+import { ligarSincronizar, chipGarmin } from './sincronizar.js';
 import { segundaDe, intervaloSemana, livreDe, taxasDiarias, custoEfetivo, cartaoRecompensa, compromissoHtml } from './semana.js';
 
 let estado = null;
@@ -65,7 +65,6 @@ ${escolhidas.length
   const pilulas = [
     aguardando ? `<span class="pilula hab">${ic.relogio(14)}${aguardando === 1 ? '1 dia aguarda o Garmin' : `${aguardando} dias aguardam o Garmin`}</span>` : '',
     resK || resR ? `<a class="pilula" href="#/semana">${ic.cadeado(14)}reservado ${[resK ? `${fNum(resK)} kcal` : '', resR ? fReais(resR) : ''].filter(Boolean).join(' · ')}</a>` : '',
-    `<button type="button" class="pilula pilula-sinc" data-sincronizar aria-label="Atualizar dados do Garmin">${ic.relogioPulso(14)}Garmin ${sinc ? 'sincronizou ' + quandoFoi(sinc.sincronizado_em) : 'ainda não sincronizou'} · <u>atualizar</u></button>`,
   ].join('');
 
   // ---- trocas disponíveis: com o plano, pelo saldo livre e o multiplicador da semana
@@ -82,7 +81,18 @@ ${escolhidas.length
 
   // ---- hoje em anéis
   const tiles = [];
-  if (hoje && hoje.gasto_kcal !== null) {
+  const prev = previsaoDia(garmin, H);
+  if (hoje && prev) {
+    // hoje: a mesma conta do Dia — gasto previsto − déficit = o que dá para comer; o anel mostra quanto já foi
+    const orc = Math.max(0, prev.previsto - Number(hoje.deficit_meta));
+    const comeu = Number(hoje.consumo_kcal);
+    const pode = orc - comeu;
+    const cor = pode < 0 ? 'var(--no)' : 'var(--cal)';
+    const arred = (v) => Math.round(v / 10) * 10;
+    tiles.push(tile('cal', 'Calorias', anel({ pct: orc > 0 ? comeu / orc : 1, cor, trilho: 'var(--cal-soft)', tam: 84, esp: 9,
+      centro: `<span class="medio num" style="color:${cor}">${pode < 0 ? MENOS : '~'}${fmt(arred(Math.abs(pode)))}</span><span class="mini">${pode < 0 ? 'passou' : 'pode comer'}</span>`,
+      rotulo: `Comeu ${fmt(comeu)} de cerca de ${fmt(orc)} kcal previstas para hoje` }), `comeu ${fmt(comeu)} de ~${fmt(arred(orc))}`));
+  } else if (hoje && hoje.gasto_kcal !== null) {
     const orc = Number(hoje.gasto_kcal) - Number(hoje.deficit_meta);
     const p = orc > 0 ? Number(hoje.consumo_kcal) / orc : 1;
     const cor = Number(hoje.credito_kcal) < 0 ? 'var(--no)' : 'var(--cal)';
@@ -178,7 +188,7 @@ ${barra(uso, lim ?? Math.max(uso, 1), { cor: 'var(--tmp)', rotulo: `${a.nome}: $
 
   return `<div class="tela">
 <div class="topo"><div><span class="quando">${esc(dataLonga(H))}</span><h1>Início</h1></div>
-<div class="ini-topo-dir"><span class="pilula">dia aberto</span><a class="btn-icone" href="#/ajustes" aria-label="Ajustes">${ic.ajustes(20)}</a></div></div>
+<div class="ini-topo-dir">${chipGarmin(sinc)}<a class="btn-icone" href="#/ajustes" aria-label="Ajustes">${ic.ajustes(20)}</a></div></div>
 
 ${faixa}
 
@@ -195,8 +205,7 @@ ${conselho}
 <section class="card" aria-labelledby="hoje-tit">
 <div class="card-cab"><h2 id="hoje-tit">Hoje</h2><a class="lado" href="#/dia" style="display:flex;align-items:center;gap:4px;min-height:44px;margin:-8px 0">ver o dia${ic.seta(14)}</a></div>
 <div class="hoje-aneis">${tiles.join('')}</div>
-${hoje ? blocoPrevisao(previsaoDia(garmin, H), hoje.consumo_kcal, hoje.deficit_meta) : ''}
-<span class="nota">Anel de calorias e dinheiro: quanto do orçamento do dia já foi. Tempo: parte produtiva do dia. O crédito entra no banco quando o dia fecha${hoje && hoje.gasto_kcal !== null ? '' : ' e o Garmin sincroniza'}.</span>
+<span class="nota">Calorias: quanto ainda dá para comer hoje (gasto previsto − déficit − o que já comeu). Dinheiro: quanto do teto do dia já foi. Tempo: parte produtiva do dia. O crédito entra no banco quando o dia fecha.</span>
 </section>
 
 ${compsHtml}
