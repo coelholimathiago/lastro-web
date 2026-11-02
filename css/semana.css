@@ -1,0 +1,159 @@
+/* semana: recompensas da semana, compromissos, eventos que reservam o banco e projeção.
+   As peças .rsem e .csem também aparecem no Início. */
+
+/* ------------------------------------------------ abas */
+
+.sem-abas { display: flex; gap: 4px; padding: 4px; border-radius: 14px; background: var(--soft); }
+.sem-abas a {
+  flex: 1; min-height: 44px; border-radius: 11px; display: flex; align-items: center; justify-content: center; gap: 6px;
+  font-size: 14px; font-weight: 500; text-decoration: none; color: var(--ink); text-align: center; flex-wrap: wrap; padding: 2px 6px;
+}
+.sem-abas a span { font-size: 12px; font-weight: 400; opacity: .75; }
+.sem-abas a[aria-selected="true"] { background: var(--ink); color: var(--bg); }
+
+.sem-grade, .sem-col { display: flex; flex-direction: column; gap: 14px; }
+.sem-bloco { display: flex; flex-direction: column; gap: 10px; }
+.sem-cab { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.sem-cab h2 { font-size: 17px; font-weight: 600; }
+.sem-cab > div, .sem-cab-txt { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.sem-link {
+  min-height: 44px; padding: 0 4px 0 12px; display: inline-flex; align-items: center; gap: 2px;
+  font-size: 13px; color: var(--ink); text-decoration: none; white-space: nowrap; flex-shrink: 0;
+}
+.sem-prox { gap: 12px; }
+.sem-prox h2 { font-size: 15px; }
+
+/* ------------------------------------------------ cartão de recompensa da semana */
+
+.rsem {
+  border-radius: 16px; padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 8px;
+  color: var(--ink); text-decoration: none; --c: var(--ink); --t: var(--track);
+}
+.rsem.cal { background: var(--cal-tint); --c: var(--cal); --t: var(--cal-soft); }
+.rsem.din { background: var(--din-tint); --c: var(--din); --t: var(--din-soft); }
+.rsem.tmp { background: var(--tmp-tint); --c: var(--tmp); --t: var(--tmp-soft); }
+.rsem-topo { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.rsem-nomes { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.rsem-nivel { font-size: 12px; font-weight: 500; color: var(--sub); }
+.rsem-nome { font-size: 17px; font-weight: 600; line-height: 1.3; }
+.rsem-pct { font-size: 32px; font-weight: 600; letter-spacing: -1px; line-height: 1.1; color: var(--c); }
+.rsem-barra { height: 12px; border-radius: 6px; background: var(--t); overflow: hidden; }
+.rsem-barra > div { height: 100%; border-radius: 6px; background: var(--c); transition: width .4s ease; }
+.rsem-juntou { font-size: 12px; color: var(--sub); }
+.rsem-prev { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; }
+.rsem-prev svg, .rsem-bloq svg { flex-shrink: 0; }
+.rsem.pronto .rsem-prev { color: var(--ok); }
+.rsem-bloq { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--no); }
+
+/* ------------------------------------------------ compromisso com progresso */
+
+.csem-lista { display: flex; flex-direction: column; gap: 14px; }
+.csem { display: flex; flex-direction: column; gap: 6px; }
+.csem-topo { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.csem-nomes { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.csem-nome { font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 4px; }
+.csem-det { font-size: 12px; color: var(--sub); }
+.csem-valor { font-size: 18px; font-weight: 600; color: var(--hab); white-space: nowrap; }
+.csem.feito .csem-valor, .csem.feito .csem-nome { color: var(--ok); }
+.csem-segs { display: flex; gap: 4px; }
+.csem-segs span { flex: 1; height: 10px; border-radius: 5px; background: var(--hab-soft); }
+.csem-segs span.on { background: var(--hab); }
+.csem.feito .csem-segs span.on { background: var(--ok); }
+.csem-barra { height: 10px; border-radius: 5px; background: var(--hab-soft); overflow: hidden; }
+.csem-barra > div { height: 100%; border-radius: 5px; background: var(--hab); }
+.csem.feito .csem-barra > div { background: var(--ok); }
+
+/* ------------------------------------------------ passos do planejamento */
+
+.sem-passo-cab { display: flex; gap: 10px; align-items: center; }
+.sem-passo-cab > div { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.sem-passo-cab h2, .sem-passo-cab h3 { font-size: 15px; font-weight: 600; }
+.sem-num {
+  width: 26px; height: 26px; border-radius: 999px; background: var(--ink); color: var(--bg);
+  font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.sem-qtd { font-size: 13px; font-weight: 600; white-space: nowrap; }
+
+/* escolha de recompensas (estrela) */
+.sem-escolhas { display: flex; flex-direction: column; gap: 4px; }
+.sem-escolha {
+  min-height: 50px; width: 100%; display: flex; align-items: center; gap: 12px; padding: 4px 12px;
+  border-radius: 12px; border: 1px solid var(--line); background: var(--card); color: var(--ink); text-align: left;
+  --c: var(--ink);
+}
+.sem-escolha.cal { --c: var(--cal); } .sem-escolha.din { --c: var(--din); } .sem-escolha.tmp { --c: var(--tmp); }
+.sem-escolha[aria-pressed="true"].cal { background: var(--cal-tint); border-color: var(--cal-tint); }
+.sem-escolha[aria-pressed="true"].din { background: var(--din-tint); border-color: var(--din-tint); }
+.sem-escolha[aria-pressed="true"].tmp { background: var(--tmp-tint); border-color: var(--tmp-tint); }
+.sem-estrela { color: var(--line2); display: flex; flex-shrink: 0; }
+.sem-escolha[aria-pressed="true"] .sem-estrela { color: var(--c); }
+.sem-escolha[aria-pressed="true"] .sem-estrela svg { fill: currentColor; }
+.sem-escolha:disabled { opacity: .6; }
+.sem-escolha-txt { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.sem-escolha-nome { font-size: 14px; font-weight: 500; line-height: 1.35; }
+.sem-escolha-sub { font-size: 12px; color: var(--sub); }
+.sem-escolha-prev { display: flex; flex-direction: column; align-items: flex-end; font-size: 11px; color: var(--sub); white-space: nowrap; }
+.sem-escolha-prev b { font-size: 12px; font-weight: 600; color: var(--ink); }
+
+/* eventos */
+.sem-evs { display: flex; flex-direction: column; }
+.sem-ev { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 6px 0; border-top: 1px solid var(--line); }
+.sem-ev-dia {
+  width: 40px; height: 40px; border-radius: 10px; background: var(--soft); font-size: 12px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.sem-ev-txt { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.sem-ev-nome { font-size: 14px; font-weight: 500; }
+.sem-ev-chips { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 11px; color: var(--sub); }
+.sem-ev-chips .chip { font-size: 11px; padding: 1px 8px; }
+.sem-ev.feito .sem-ev-nome { color: var(--sub); text-decoration: line-through; }
+.sem-ev.feito .sem-ev-dia { background: var(--din-tint); color: var(--din); }
+.sem-ev-acoes { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+.sem-mini {
+  min-height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line2); background: var(--card);
+  font-size: 12px; font-weight: 500; color: var(--ink);
+}
+.sem-mini.forte { background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
+.btn-icone.armado { color: var(--no); background: var(--no-tint); }
+
+/* adicionar (evento, compromisso) */
+.sem-add { border-radius: 12px; }
+.sem-add summary {
+  list-style: none; min-height: 44px; border-radius: 12px; border: 1px dashed var(--line2);
+  display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 13px; cursor: pointer;
+}
+.sem-add summary::-webkit-details-marker { display: none; }
+.sem-add[open] summary { margin-bottom: 10px; border-style: solid; background: var(--soft); }
+.card.hab .sem-add summary { border-color: color-mix(in srgb, var(--ink) 28%, transparent); }
+.card.hab .sem-add[open] summary { background: color-mix(in srgb, var(--ink) 6%, transparent); }
+.sem-form { display: flex; flex-direction: column; gap: 10px; }
+.sem-form-linha { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+.sem-form .campo[hidden] { display: none; }
+.sem-check { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: 14px; cursor: pointer; }
+.sem-check input { width: 20px; height: 20px; accent-color: var(--ink); }
+.sem-erro { font-size: 13px; color: var(--no); }
+.sem-erro:empty { display: none; }
+
+/* projeção */
+.proj-lista { display: flex; flex-direction: column; gap: 8px; }
+.proj { border-radius: 12px; padding: 8px 12px 10px; display: flex; flex-direction: column; gap: 5px; --c: var(--ink); --t: var(--track); }
+.proj.cal { background: var(--cal-tint); --c: var(--cal); --t: var(--cal-soft); }
+.proj.din { background: var(--din-tint); --c: var(--din); --t: var(--din-soft); }
+.proj.tmp { background: var(--tmp-tint); --c: var(--tmp); --t: var(--tmp-soft); }
+.proj.neg { background: var(--no-tint); --c: var(--no); --t: var(--no-soft); }
+.proj-topo { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.proj-nome { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; }
+.proj-saldo { font-size: 24px; font-weight: 600; letter-spacing: -0.5px; line-height: 1.15; color: var(--c); white-space: nowrap; }
+.proj-saldo small { font-size: 12px; font-weight: 500; margin-left: 4px; }
+.proj-barra { height: 10px; border-radius: 5px; background: var(--t); overflow: hidden; }
+.proj-barra > div { height: 100%; border-radius: 5px; background: var(--c); }
+.proj-conta { font-size: 11px; color: var(--sub); }
+
+/* ------------------------------------------------ tela larga: duas colunas */
+
+@media (min-width: 900px) {
+  body[data-rota="semana"] .sem-abas { max-width: 520px; }
+  .sem-grade { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start; }
+  .sem-col { gap: 20px; }
+  .proj-saldo { font-size: 28px; }
+}

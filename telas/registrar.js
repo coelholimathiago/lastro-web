@@ -1,11 +1,12 @@
-// Registrar: refeição (descrição + kcal), gasto (descrição + valor + categoria), tempo (atividade + minutos).
+// Registrar: refeição (descrição + kcal), gasto (descrição + valor + categoria), tempo (atividade + minutos), peso (kg do dia).
 
-import { hojeBR, horaBR, dataLonga, esc, ic, fNum, fReais, fFator, fmt, lerNumero, MENOS } from '../ui.js';
+import { hojeBR, horaBR, addDias, dataLonga, esc, ic, fNum, fReais, fFator, fmt, lerNumero, MENOS } from '../ui.js';
 
 const TIPOS = [
   { id: 'refeicao', nome: 'Refeição', cls: 'cal' },
   { id: 'gasto', nome: 'Gasto', cls: 'din' },
   { id: 'tempo', nome: 'Tempo', cls: 'tmp' },
+  { id: 'peso', nome: 'Peso', cls: 'cal' },
 ];
 const CATEGORIAS = ['Mercado', 'Restaurante', 'Transporte', 'Casa', 'Saúde', 'Lazer', 'Outros'];
 
@@ -16,9 +17,13 @@ export async function montar({ api, rota }) {
   const tipo = TIPOS.some((t) => t.id === rota.q.get('tipo')) ? rota.q.get('tipo') : 'refeicao';
   let D = rota.q.get('data') || H;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(D) || D > H) D = H;
-  const [c, atividades, regra] = await Promise.all([api.creditoDia(D), api.atividades(), api.regras(D)]);
+  const pesoOk = typeof api.registrarPeso === 'function';
+  const [c, atividades, regra, pesos] = await Promise.all([
+    api.creditoDia(D), api.atividades(), api.regras(D),
+    tipo === 'peso' && pesoOk && api.pesoMedia ? api.pesoMedia(addDias(D, -14), D).catch(() => []) : Promise.resolve([]),
+  ]);
   const calculadora = tipo === 'refeicao' && typeof api.estimarRefeicao === 'function';
-  ctxForm = { tipo, D, H, c, atividades, regra, calculadora, estimativa: null };
+  ctxForm = { tipo, D, H, c, atividades, regra, calculadora, estimativa: null, pesoOk, pesos };
 
   const abas = TIPOS.map((t) => `<button type="button" role="tab" data-tipo="${t.id}" aria-selected="${t.id === tipo}"><span class="ponto ${t.cls}"></span>${t.nome}</button>`).join('');
 
@@ -42,6 +47,8 @@ ${stepper('kcal', 'Calorias', 'kcal', 400, 50, 'cal')}
 ${stepper('valor', 'Valor', 'R$', 20, 5, 'din', true)}
 <fieldset style="border:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px"><legend class="grupo-rot" style="padding:0;margin-bottom:8px">Categoria</legend>
 <div class="opcoes">${CATEGORIAS.map((k, i) => `<label class="opcao"><input class="sr" type="radio" name="categoria" value="${k}"${i === 0 ? ' checked' : ''}>${k}</label>`).join('')}</div></fieldset>`;
+  } else if (tipo === 'peso') {
+    corpo = corpoPeso(D, pesos, pesoOk);
   } else {
     const fator = regra ? Number(regra.fator_vicio) : 2.3;
     const grupo = (tp, rot) => {
@@ -61,16 +68,32 @@ ${stepper('minutos', 'Minutos', 'min', 30, 5, 'tmp')}
 
   return `<div class="tela">
 <div class="topo"><div><span class="quando">${esc(dataLonga(D))}</span><h1>Registrar</h1></div>
-<a class="btn-icone" href="#/dia?data=${D}" aria-label="Fechar e ver o dia">${ic.x(18)}</a></div>
-<div class="abas" role="tablist" aria-label="Tipo de registro">${abas}</div>
+${tipo === 'peso' ? `<a class="btn-icone" href="#/metas" aria-label="Fechar e ver as metas">${ic.x(18)}</a>` : `<a class="btn-icone" href="#/dia?data=${D}" aria-label="Fechar e ver o dia">${ic.x(18)}</a>`}</div>
+<div class="abas abas-4" role="tablist" aria-label="Tipo de registro">${abas}</div>
 <form id="form-reg" class="tela" novalidate>
 ${corpo}
 <label class="campo">Dia<input name="data" type="date" value="${D}" max="${H}" required></label>
 <div id="previa"></div>
 <div id="erro-reg" role="alert"></div>
-<button type="submit" class="btn primario largo">Salvar ${TIPOS.find((t) => t.id === tipo).nome.toLowerCase()}</button>
+<button type="submit" class="btn primario largo"${tipo === 'peso' && !pesoOk ? ' disabled' : ''}>Salvar ${TIPOS.find((t) => t.id === tipo).nome.toLowerCase()}</button>
 </form>
 </div>`;
+}
+
+// Peso: kg com uma casa (passo de 0,1), partindo da última pesagem ou da média de 7 dias
+function corpoPeso(D, pesos, pesoOk) {
+  if (!pesoOk) {
+    return `<div class="aviso neutro">${ic.peso(16)}<span><b>Disponível com a conta conectada.</b> O peso alimenta as metas pela média de 7 dias, que mora no Supabase.</span></div>`;
+  }
+  const doDia = pesos.find((p) => p.data === D && p.kg !== null && p.kg !== undefined);
+  const ultimo = pesos.filter((p) => p.kg !== null && p.kg !== undefined).pop();
+  const media = pesos.filter((p) => p.media7 !== null && p.media7 !== undefined).pop();
+  const base = doDia ? Number(doDia.kg) : ultimo ? Number(ultimo.kg) : media ? Number(media.media7) : 80;
+  const nota = doDia
+    ? `Já há ${fmt(doDia.kg, 1)} kg neste dia: salvar troca pelo valor novo.`
+    : media ? `Média de 7 dias: ${fmt(media.media7, 1)} kg. A pesagem manual vale sobre a do Garmin.` : 'A pesagem manual vale sobre a do Garmin.';
+  return `${stepper('kg', 'Peso', 'kg', fmt(base, 1).replace(/\./g, ''), 0.1, 'cal', true)}
+<p class="nota" style="margin:0">${esc(nota)} Melhor de manhã, em jejum.</p>`;
 }
 
 function stepper(nome, rot, un, valor, passo, cls, decimal = false) {
@@ -78,8 +101,8 @@ function stepper(nome, rot, un, valor, passo, cls, decimal = false) {
 <label class="rot-s" style="flex:1"><span><span class="ponto ${cls}"></span>${rot} (${un})</span>
 <input class="valor-s num" name="${nome}" type="text" inputmode="${decimal ? 'decimal' : 'numeric'}" value="${valor}" required></label>
 <div class="botoes">
-<button type="button" data-passo="${nome}" data-delta="${-passo}" aria-label="Diminuir ${passo} ${un}">${ic.menos(20)}</button>
-<button type="button" data-passo="${nome}" data-delta="${passo}" aria-label="Aumentar ${passo} ${un}">${ic.mais(20)}</button>
+<button type="button" data-passo="${nome}" data-delta="${-passo}" aria-label="Diminuir ${String(passo).replace('.', ',')} ${un}">${ic.menos(20)}</button>
+<button type="button" data-passo="${nome}" data-delta="${passo}" aria-label="Aumentar ${String(passo).replace('.', ',')} ${un}">${ic.mais(20)}</button>
 </div></div>`;
 }
 
@@ -98,7 +121,7 @@ ${est.observacao ? `<span class="nota">${esc(est.observacao)}</span>` : ''}
 
 function previa(form) {
   const { tipo, c } = ctxForm;
-  if (!c) return '';
+  if (tipo === 'peso' || !c) return '';
   const linhaPrevia = (cls, rot, antes, depois) =>
     `<div class="stepper ${cls}" style="padding:12px 14px"><span class="nota" style="color:var(--ink)">${rot}</span><span class="num" style="font-weight:600;white-space:nowrap"><span class="cor-sub" style="font-weight:400">${antes} → </span><span class="${depois.startsWith(MENOS) ? 'cor-no' : `cor-${cls}`}">${depois}</span></span></div>`;
   if (tipo === 'refeicao') {
@@ -134,7 +157,8 @@ export function ligar(raiz, { api, ir, toast }) {
       const campo = form[p.dataset.passo];
       const atual = lerNumero(campo.value) || 0;
       const novo = Math.max(0, atual + Number(p.dataset.delta));
-      campo.value = p.dataset.passo === 'valor' ? fmt(novo, novo % 1 ? 2 : 0).replace(/\./g, '') : String(Math.round(novo));
+      if (p.dataset.passo === 'kg') campo.value = fmt(Math.round(novo * 10) / 10, 1).replace(/\./g, '');
+      else campo.value = p.dataset.passo === 'valor' ? fmt(novo, novo % 1 ? 2 : 0).replace(/\./g, '') : String(Math.round(novo));
       atualizar();
     }
     const m = ev.target.closest('[data-min]');
@@ -191,6 +215,22 @@ export function ligar(raiz, { api, ir, toast }) {
     const data = form.data.value || ctxForm.D;
     const falha = (msg) => { erro.innerHTML = `<div class="aviso">${ic.x(16)}<span>${esc(msg)}</span></div>`; };
     if (data > ctxForm.H) return falha('Não dá para registrar no futuro.');
+    if (tipo === 'peso') {
+      if (!ctxForm.pesoOk) return falha('Disponível com a conta conectada.');
+      const kg = lerNumero(form.kg.value);
+      if (!Number.isFinite(kg) || kg < 30 || kg > 300) return falha('Informe o peso em kg, entre 30 e 300.');
+      const btnP = form.querySelector('[type="submit"]');
+      btnP.disabled = true;
+      try {
+        await api.registrarPeso(data, Math.round(kg * 10) / 10);
+        toast('Peso registrado');
+        ir('#/metas');
+      } catch (e) {
+        falha(e.message || String(e));
+        btnP.disabled = false;
+      }
+      return;
+    }
     let tabela, linha;
     if (tipo === 'refeicao') {
       const kcal = lerNumero(form.kcal.value);

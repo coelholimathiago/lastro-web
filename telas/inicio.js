@@ -1,24 +1,82 @@
-// Início: banco das três moedas, o dia de hoje em anéis, hábitos x de y, Garmin e vícios com barra, atalho Liberar.
+// Início: recompensas da semana no topo (com quanto o banco livre já cobre), banco das três moedas,
+// Conselheiro, o dia de hoje em anéis, compromissos da semana, hábitos, Garmin e vícios.
 
 import { hojeBR, addDias, dataLonga, quandoFoi, esc, ic, anel, barra, linha, fNum, fReais, fDuracao, fmt, clamp01, MENOS } from '../ui.js';
 import { bancoHtml, avaliar } from './comum.js';
+import { cartoesConselheiro, ligarConselheiro } from './conselheiro.js';
+import { segundaDe, intervaloSemana, livreDe, taxasDiarias, custoEfetivo, cartaoRecompensa, compromissoHtml } from './semana.js';
+
+let estado = null;
 
 export async function montar({ api }) {
   const H = hojeBR();
   const de = addDias(H, -6);
-  const [banco, creditos, habitos, garmin, tempos, atividades, recompensas, sinc] = await Promise.all([
-    api.banco(), api.creditos(de, H), api.habitosDia(H), api.garminPeriodo(addDias(H, -13), H),
+  const S = segundaDe(H);
+  const de28 = addDias(S, -28), ate28 = addDias(S, -1);
+  const novo = typeof api.metas === 'function';
+
+  const [banco, creditosTodos, habitos, garmin, tempos, atividades, recompensas, sinc, plano] = await Promise.all([
+    novo ? api.bancoDisponivel().catch(() => api.banco()) : api.banco(),
+    api.creditos(de28 < de ? de28 : de, H), api.habitosDia(H), api.garminPeriodo(addDias(H, -13), H),
     api.tempos(H), api.atividades(), api.recompensas(), api.ultimaSinc(),
+    // plano da semana: se falhar (migração não aplicada, rede), o resto do Início continua de pé
+    novo
+      ? Promise.all([api.recompensasStatus(), api.semanaRecompensas(S), api.compromissos(S), api.sugestoes(S)])
+        .then(([status, ids, comps, sugs]) => ({ status, ids, comps, sugs }))
+        .catch((e) => ({ erro: e.message || String(e) }))
+      : Promise.resolve(null),
   ]);
+  const creditos = creditosTodos.filter((c) => c.data >= de);
   const hoje = creditos.find((c) => c.data === H) || null;
   const gHoje = garmin.find((g) => g.data === H) || null;
+  const livre = livreDe(banco);
+  const taxas = taxasDiarias(creditosTodos, de28, ate28);
+  estado = { sugs: plano && !plano.erro ? plano.sugs : [] };
+
+  // ---- recompensas da semana (faixa do topo)
+  let faixa;
+  if (!plano) {
+    faixa = `<section class="rec-faixa" aria-labelledby="rec-tit">
+<div class="rec-cab"><div><h2 id="rec-tit">Recompensas da semana</h2><span class="nota">${intervaloSemana(S)}</span></div></div>
+<div class="aviso neutro">${ic.cadeado(16)}<span><b>Disponível com a conta conectada.</b> No modo demonstração o plano da semana não é salvo.</span></div>
+</section>`;
+  } else if (plano.erro) {
+    faixa = `<section class="rec-faixa" aria-labelledby="rec-tit">
+<div class="rec-cab"><div><h2 id="rec-tit">Recompensas da semana</h2><span class="nota">${intervaloSemana(S)}</span></div></div>
+<div class="aviso neutro">${ic.x(16)}<span>Não deu para carregar o plano da semana: ${esc(plano.erro)}</span></div>
+</section>`;
+  } else {
+    const escolhidas = plano.status.filter((r) => plano.ids.includes(r.id));
+    faixa = `<section class="rec-faixa" aria-labelledby="rec-tit">
+<div class="rec-cab"><div><h2 id="rec-tit">Recompensas da semana</h2><span class="nota">${intervaloSemana(S)}${escolhidas.length ? ' · a barra é o que o banco livre já cobre' : ''}</span></div>
+<a class="sem-link" href="#/semana">${escolhidas.length ? 'Semana' : 'Escolher'}${ic.seta(14)}</a></div>
+${escolhidas.length
+    ? `<div class="rec-grade">${escolhidas.map((r) => cartaoRecompensa(r, livre, taxas, H)).join('')}</div>`
+    : `<a class="rec-convite" href="#/semana"><span class="rec-convite-ico">${ic.estrela(22)}</span>
+<span class="rec-convite-txt"><b>Escolha o que quer ganhar esta semana</b><span>De 2 a 4 recompensas. A barra mostra quanto o banco já cobre de cada uma.</span></span>${ic.seta(18)}</a>`}
+</section>`;
+  }
 
   // ---- banco
   const aguardando = Number(banco.dias_aguardando_garmin) || 0;
+  const resK = Number(banco.kcal_reservado) || 0, resR = Number(banco.reais_reservado) || 0;
   const pilulas = [
     aguardando ? `<span class="pilula hab">${ic.relogio(14)}${aguardando === 1 ? '1 dia aguarda o Garmin' : `${aguardando} dias aguardam o Garmin`}</span>` : '',
+    resK || resR ? `<a class="pilula" href="#/semana">${ic.cadeado(14)}reservado ${[resK ? `${fNum(resK)} kcal` : '', resR ? fReais(resR) : ''].filter(Boolean).join(' · ')}</a>` : '',
     `<span class="pilula">${ic.relogioPulso(14)}Garmin ${sinc ? 'sincronizou ' + quandoFoi(sinc.sincronizado_em) : 'ainda não sincronizou'}</span>`,
   ].join('');
+
+  // ---- trocas disponíveis: com o plano, pelo saldo livre e o multiplicador da semana
+  let disp;
+  if (plano && !plano.erro) {
+    disp = plano.status.filter((r) => {
+      if (r.condicao_ok === false) return false;
+      const c = custoEfetivo(r);
+      return !avaliar({ custo_kcal: c.kcal, custo_reais: c.reais, custo_min: c.min }, livre).bloq;
+    }).length;
+  } else {
+    disp = recompensas.filter((r) => !avaliar(r, banco).bloq).length;
+  }
 
   // ---- hoje em anéis
   const tiles = [];
@@ -45,6 +103,18 @@ export async function montar({ api }) {
     tiles.push(tile('tmp', 'Tempo', anel({ pct: prod + custo > 0 ? prod / (prod + custo) : 0, cor: corT, trilho: custo > 0 ? 'var(--no-soft)' : 'var(--tmp-soft)', tam: 84, esp: 9,
       centro: `<span class="medio num" style="color:${corT}">${fNum(hoje.credito_min, { sinal: true })}</span><span class="mini">min</span>`,
       rotulo: `${prod} minutos produtivos e ${custo} de custo de vício` }), `+${prod} produtivo · ${custo ? MENOS + custo : '0'} vício`));
+  }
+
+  // ---- compromissos da semana
+  let compsHtml = '';
+  if (plano && !plano.erro) {
+    compsHtml = `<section class="card hab" aria-labelledby="comp-tit">
+<div class="card-cab"><div class="sem-cab-txt"><h2 id="comp-tit"><span class="ponto hab"></span>Compromissos da semana</h2><span class="nota">saem das suas metas</span></div>
+<a class="sem-link" href="#/semana?aba=planejar">Planejar${ic.seta(14)}</a></div>
+${plano.comps.length
+    ? `<div class="csem-lista">${plano.comps.map((c) => compromissoHtml(c, atividades)).join('')}</div>`
+    : '<p class="vazio">Nenhum compromisso nesta semana. Planeje treinos, sono e leitura na Semana.</p>'}
+</section>`;
   }
 
   // ---- hábitos
@@ -102,22 +172,31 @@ ${barra(uso, lim ?? Math.max(uso, 1), { cor: 'var(--tmp)', rotulo: `${a.nome}: $
 <span class="nota${resta !== null && resta < 0 ? ' cor-no' : ''}">${sub}</span></div>`;
   }).join('');
 
-  // ---- trocas disponíveis
-  const disp = recompensas.filter((r) => !avaliar(r, banco).bloq).length;
+  const conselho = plano && !plano.erro ? cartoesConselheiro(plano.sugs, { max: 1, vazio: false }) : '';
 
   return `<div class="tela">
-<div class="topo"><div><span class="quando">${esc(dataLonga(H))}</span><h1>Início</h1></div><span class="pilula">dia aberto</span></div>
+<div class="topo"><div><span class="quando">${esc(dataLonga(H))}</span><h1>Início</h1></div>
+<div class="ini-topo-dir"><span class="pilula">dia aberto</span><a class="btn-icone" href="#/ajustes" aria-label="Ajustes">${ic.ajustes(20)}</a></div></div>
+
+${faixa}
 
 ${bancoHtml(banco, creditos, { lado: 'últimos 7 dias nas barras' })}
 <div class="banco-rodape">${pilulas}</div>
 
+<div class="ini-acoes">
 <a class="cta" href="#/liberar"><span class="esq">${ic.aberto(22)}Liberar</span><span class="dir">${disp === 1 ? '1 troca disponível' : `${disp} trocas disponíveis`}${ic.seta(16)}</span></a>
+<a class="btn ini-registrar" href="#/registrar">${ic.registrar(20)}Registrar</a>
+</div>
+
+${conselho}
 
 <section class="card" aria-labelledby="hoje-tit">
 <div class="card-cab"><h2 id="hoje-tit">Hoje</h2><a class="lado" href="#/dia" style="display:flex;align-items:center;gap:4px;min-height:44px;margin:-8px 0">ver o dia${ic.seta(14)}</a></div>
 <div class="hoje-aneis">${tiles.join('')}</div>
 <span class="nota">Anel de calorias e dinheiro: quanto do orçamento do dia já foi. Tempo: parte produtiva do dia. O crédito entra no banco quando o dia fecha${hoje && hoje.gasto_kcal !== null ? '' : ' e o Garmin sincroniza'}.</span>
 </section>
+
+${compsHtml}
 
 <section class="card hab" aria-labelledby="hab-tit">
 <div class="card-cab"><h2 id="hab-tit"><span class="ponto hab"></span>Hábitos de hoje</h2><span class="lado">${semMarca ? `${semMarca} sem marcação` : 'tudo marcado'}</span></div>
@@ -146,6 +225,10 @@ ${vicios.length ? `<section class="card tmp" aria-labelledby="vicio-tit">
 <span class="nota">Uso registrado no Lastro. Minuto de vício custa × fator no tempo. WhatsApp e apps essenciais ficam sempre liberados.</span>
 </section>` : ''}
 </div>`;
+}
+
+export function ligar(raiz, ctx) {
+  if (estado && estado.sugs.length) ligarConselheiro(raiz, ctx, estado.sugs);
 }
 
 function tile(cls, nome, anelHtml, det) {

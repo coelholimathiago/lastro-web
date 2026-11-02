@@ -1,0 +1,202 @@
+/* metas: cards na cor do que medem, números grandes, barra/anel de progresso, faixa do prazo */
+
+/* ------------------------------------------------ resumo */
+
+.metas-resumo {
+  background: var(--hab-tint); border-radius: var(--raio); padding: 16px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.metas-resumo-topo { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+.metas-resumo-n { display: flex; align-items: baseline; gap: 10px; }
+.metas-resumo-n > .num { font-size: 44px; font-weight: 600; letter-spacing: -0.04em; line-height: 1; color: var(--hab); }
+.metas-resumo-n > div { display: flex; flex-direction: column; }
+.metas-resumo-n h2 { font-size: 15px; font-weight: 500; }
+.metas-resumo-prazo { display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
+.metas-resumo-prazo b { font-size: 20px; font-weight: 600; line-height: 1.2; }
+.metas-resumo-lib {
+  display: flex; flex-direction: column; gap: 6px; padding-top: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--hab) 25%, transparent);
+}
+.metas-fichas { display: flex; flex-wrap: wrap; gap: 8px; }
+.metas-ficha {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 6px 10px;
+  border-radius: 10px; background: var(--card);
+}
+.metas-resumo .nota { color: color-mix(in srgb, var(--ink) 70%, var(--hab-tint)); }
+
+/* ------------------------------------------------ horizonte */
+
+.metas-hz-bloco { display: flex; flex-direction: column; gap: 8px; }
+.metas-hz { display: flex; padding: 4px; gap: 4px; border-radius: 14px; background: var(--soft); }
+.metas-hz button {
+  flex: 1; min-height: 44px; border: none; border-radius: 11px; background: transparent; color: var(--ink);
+  font-size: 14px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.metas-hz button span { font-size: 12px; font-weight: 400; opacity: .75; }
+.metas-hz button[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
+.metas-hz-leg { padding: 0 4px; }
+
+/* ------------------------------------------------ lista e card de meta */
+
+.metas-lista { display: flex; flex-direction: column; gap: 14px; }
+.metas-nova { min-height: 52px; font-size: 14px; }
+
+.meta-card {
+  border-radius: var(--raio); padding: 16px; display: flex; flex-direction: column; gap: 14px;
+  background: var(--card); border: 1px solid transparent;
+  --m: var(--ink); --m-soft: var(--track); --m-linha: color-mix(in srgb, var(--ink) 10%, transparent);
+}
+.meta-card.cal { background: var(--cal-tint); --m: var(--cal); --m-soft: var(--cal-soft); }
+.meta-card.din { background: var(--din-tint); --m: var(--din); --m-soft: var(--din-soft); }
+.meta-card.tmp { background: var(--tmp-tint); --m: var(--tmp); --m-soft: var(--tmp-soft); }
+.meta-card.hab { background: var(--hab-tint); --m: var(--hab); --m-soft: var(--hab-soft); }
+.meta-card.cumprida { border-color: color-mix(in srgb, var(--ok) 45%, transparent); }
+.meta-card h3 { font-size: 17px; font-weight: 600; line-height: 1.3; }
+
+.meta-cab { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.meta-pilula {
+  display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 500;
+  padding: 4px 10px; border-radius: 999px; background: var(--card); white-space: nowrap;
+}
+.meta-pilula.ok { color: var(--ok); }
+.meta-fonte { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--sub); text-align: right; }
+.meta-fonte svg { color: var(--m); flex-shrink: 0; }
+
+.meta-num { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.meta-de-para { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; }
+.meta-de-para .num { font-size: 38px; font-weight: 600; letter-spacing: -0.03em; line-height: 1.1; }
+.meta-de-para .num.alvo { color: var(--m); }
+.meta-de-para .seta { font-size: 20px; color: var(--sub); }
+.meta-de-para .un { font-size: 14px; color: var(--sub); }
+.meta-leg { font-size: 12px; color: var(--sub); line-height: 1.45; }
+.meta-leg-forte { font-size: 12px; line-height: 1.45; }
+.meta-leg-forte b { font-weight: 600; }
+.meta-sub { font-size: 12px; font-weight: 600; }
+
+.meta-linha-num { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.meta-lado { display: flex; flex-direction: column; align-items: center; gap: 8px; flex-shrink: 0; }
+.meta-lado .anel-centro .medio { font-size: 14px; }
+
+/* contagem: −1 / +1 */
+.meta-contador { display: flex; gap: 6px; }
+.meta-contador button {
+  width: 44px; height: 44px; border-radius: 12px; border: none; background: var(--card); color: var(--ink);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.meta-contador button:disabled { color: var(--line2); cursor: default; }
+
+/* peso: barra do início ao alvo com o traço da balança */
+.meta-peso-barra { display: flex; flex-direction: column; gap: 6px; }
+.meta-trilho { position: relative; height: 10px; border-radius: 99px; background: var(--m-soft); }
+.meta-enche { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 99px; background: var(--m); transition: width .4s ease; }
+.meta-traco {
+  position: absolute; top: -4px; width: 4px; height: 18px; margin-left: -2px; border-radius: 2px;
+  background: var(--ink); box-shadow: 0 0 0 2px var(--cal-tint);
+}
+.meta-tempo-rot { display: flex; justify-content: space-between; gap: 8px; font-size: 11px; color: var(--sub); }
+
+/* faixa de semanas (ou meses) do prazo */
+.meta-tempo { display: flex; flex-direction: column; gap: 6px; }
+.meta-segs { display: flex; gap: 4px; }
+.meta-segs.finos { gap: 2px; }
+.meta-segs span { flex: 1; height: 10px; border-radius: 3px; background: var(--m-soft); border: 2px solid var(--m-soft); }
+.meta-segs span.foi { background: var(--m); border-color: var(--m); }
+.meta-segs span.agora { background: transparent; border-color: var(--m); }
+.meta-card .meta-segs { --m-soft: color-mix(in srgb, var(--m) 22%, transparent); }
+
+/* escada de treinos */
+.meta-escada { display: flex; flex-direction: column; gap: 8px; }
+.degraus { display: flex; align-items: flex-end; gap: 8px; }
+.degrau { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: stretch; gap: 4px; text-align: center; }
+.degrau .num { font-size: 15px; font-weight: 600; }
+.degrau > div { border-radius: 8px 8px 4px 4px; background: var(--m-soft); border: 2px solid var(--m-soft); }
+.degrau.hoje > div { background: var(--m); border-color: var(--m); }
+.degrau.atual > div { background: var(--card); border-color: var(--m); }
+.degrau .r { font-size: 12px; color: var(--sub); }
+.degrau.atual .r { color: var(--ink); font-weight: 600; }
+.degrau .n { font-size: 11px; color: var(--sub); margin-top: -4px; }
+
+/* peso: gráfico da média de 7 dias */
+.meta-grafico { background: var(--card); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.meta-grafico-cab { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.meta-grafico-svg svg { display: block; width: 100%; height: auto; }
+
+.meta-dica {
+  display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 12px;
+  background: var(--card); font-size: 12px; line-height: 1.45;
+}
+.meta-dica svg { flex-shrink: 0; margin-top: 1px; color: var(--m); }
+
+/* esta semana */
+.meta-semana, .meta-cofre { display: flex; flex-direction: column; gap: 6px; }
+.meta-semana-topo { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 12px; }
+.meta-semana-topo b { font-size: 14px; font-weight: 600; white-space: nowrap; }
+.meta-semana-topo b span { font-weight: 400; font-size: 12px; }
+.meta-card .barra { background: var(--m-soft); }
+
+/* mede / pede / prazo */
+.meta-fatos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.meta-fatos > div { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.meta-fatos span { font-size: 11px; color: var(--sub); }
+.meta-fatos b { font-size: 13px; font-weight: 500; }
+
+/* recompensas que a meta libera */
+.meta-libera { background: var(--card); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.meta-libera-tit { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; }
+.meta-libera-tit svg { color: var(--din); flex-shrink: 0; }
+.meta-libera-cond {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px;
+  padding-top: 8px; border-top: 1px solid var(--line);
+}
+.meta-libera .barra { background: var(--soft); }
+
+.meta-acoes { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; padding-top: 2px; }
+.meta-acoes .btn { min-height: 44px; font-size: 14px; padding: 0 14px; }
+.meta-acoes .btn:not(.primario):not(.fantasma) { border-color: transparent; background: var(--card); }
+.meta-acoes .btn.fantasma { margin-right: auto; padding-left: 4px; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+
+/* ------------------------------------------------ conselheiro */
+
+.metas-conselho { display: flex; flex-direction: column; gap: 10px; }
+.metas-conselho-lista { display: flex; flex-direction: column; gap: 10px; }
+
+/* ------------------------------------------------ topo */
+
+.metas-nova-topo { min-height: 44px; padding: 0 16px 0 12px; font-size: 13px; border-radius: 12px; flex-shrink: 0; }
+
+/* ------------------------------------------------ formulário */
+
+.metas-form [hidden] { display: none !important; }
+.metas-fs { border: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.metas-fs legend { padding: 0; margin-bottom: 8px; }
+.metas-tipo-nota { margin: -6px 0 0; }
+.metas-par { display: flex; flex-direction: column; gap: 10px; }
+.metas-par .stepper.hab { background: var(--hab-tint); }
+.metas-par .stepper input[readonly] { color: var(--sub); }
+.metas-form-acoes { display: flex; flex-direction: column; gap: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+.metas-form-acoes .cor-no { color: var(--no); }
+
+/* registrar: quatro abas (refeição, gasto, tempo, peso) e stepper âmbar */
+.abas.abas-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+.abas.abas-4 button { font-size: 13px; gap: 5px; padding: 0 4px; }
+.stepper.hab { background: var(--hab-tint); }
+
+/* ------------------------------------------------ tela larga */
+
+@media (min-width: 900px) {
+  body[data-rota="metas"] .metas-tela { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+  body[data-rota="metas"] .metas-tela > .topo { grid-column: 1 / -1; }
+  body[data-rota="metas"] .metas-tela > .metas-resumo { grid-column: 1; }
+  body[data-rota="metas"] .metas-tela > .metas-hz-bloco { grid-column: 2; align-self: end; }
+  body[data-rota="metas"] .metas-lista { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+  body[data-rota="metas"] .metas-lista > .metas-nova { grid-column: 1 / -1; }
+  body[data-rota="metas"] .metas-conselho { grid-column: 1 / -1; }
+  body[data-rota="metas"] .metas-conselho-lista { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; }
+  body[data-rota="metas"] .metas-form { max-width: 600px; margin: 0 auto; width: 100%; }
+  body[data-rota="metas"] .metas-par { flex-direction: row; }
+  body[data-rota="metas"] .metas-par > .stepper { flex: 1; min-width: 0; }
+  .meta-de-para .num { font-size: 42px; }
+}
+
+/* atalho de pesagem dentro do card de peso */
+.meta-card .meta-registrar { background: var(--card); border-color: transparent; min-height: 48px; }

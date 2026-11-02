@@ -126,6 +126,10 @@ export const ic = {
   upload: (w) => svg('<path d="M12 16V4M7 9l5-5 5 5"/><path d="M5 20h14"/>', w),
   alvo: (w) => svg('<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/>', w),
   troca: (w) => svg('<path d="M4 8h13l-3-3M20 16H7l3 3"/>', w),
+  semana: (w) => svg('<rect x="3" y="5" width="18" height="15" rx="3"/><path d="M9 5v15M15 5v15"/>', w),
+  brilho: (w) => svg('<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/>', w),
+  estrela: (w) => svg('<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/>', w),
+  cofre: (w) => svg('<rect x="3" y="6" width="18" height="14" rx="3"/><circle cx="12" cy="13" r="3"/><path d="M7 6V4h10v2"/>', w),
 };
 
 // ------------------------------------------------------------ gráficos

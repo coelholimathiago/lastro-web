@@ -339,6 +339,18 @@ main:focus { outline: none; }
 .linha-ajuste:first-of-type { border-top: none; }
 .linha-ajuste .v { color: var(--sub); text-align: right; }
 
+/* ------------------------------------------------ conselheiro */
+
+.conselho {
+  border: 1.5px dashed color-mix(in srgb, var(--hab) 65%, transparent); border-radius: var(--raio);
+  padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; background: color-mix(in srgb, var(--hab-tint) 55%, transparent);
+}
+.conselho-cab { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--hab); }
+.conselho-tit { margin: 0; font-size: 15px; font-weight: 600; }
+.conselho-txt { margin: 0; font-size: 13px; line-height: 1.5; color: var(--ink); }
+.conselho-botoes { display: flex; gap: 8px; margin-top: 4px; }
+.conselho-aplicar { background: var(--hab); color: var(--on-ink); border-color: var(--hab); min-height: 40px; font-size: 13px; }
+
 /* ------------------------------------------------ navegador (tela larga) */
 
 @media (min-width: 900px) {

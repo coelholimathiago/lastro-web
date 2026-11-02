@@ -115,6 +115,98 @@ export async function criar(url, chave) {
       return data;
     },
 
+    // ---- banco com reservas da semana (eventos ainda não realizados)
+    async bancoDisponivel() {
+      return ok(await sb.from('banco_disponivel').select('*').maybeSingle())
+        || { kcal: 0, reais: 0, min: 0, dias_aguardando_garmin: 0, kcal_reservado: 0, reais_reservado: 0, kcal_livre: 0, reais_livre: 0 };
+    },
+
+    // ---- peso (a pesagem manual vale sobre a do Garmin)
+    async pesoMedia(de, ate) {
+      return ok(await sb.from('peso_media7').select('*').gte('data', de).lte('data', ate).order('data'));
+    },
+    async registrarPeso(data, kg) {
+      ok(await sb.from('pesagem').upsert({ data, kg }, { onConflict: 'data' }));
+    },
+
+    // ---- metas de 3, 6 e 12 meses
+    async metas() {
+      return ok(await sb.from('meta_progresso').select('*').neq('status', 'abandonada').order('prazo'));
+    },
+    async salvarMeta(m) {
+      if (m.id) return ok(await sb.from('meta').update(m).eq('id', m.id).select().single());
+      return ok(await sb.from('meta').insert(m).select().single());
+    },
+    async somarContagem(id, delta) {
+      const atual = ok(await sb.from('meta').select('contagem_atual').eq('id', id).single());
+      ok(await sb.from('meta').update({ contagem_atual: Math.max(0, Number(atual.contagem_atual) + delta) }).eq('id', id));
+    },
+
+    // ---- recompensas com nível, multiplicador da semana e cofrinho
+    async recompensasStatus() {
+      return ok(await sb.from('recompensa_status').select('*').eq('ativo', true).order('ordem'));
+    },
+    async salvarRecompensa(r) {
+      if (r.id) return ok(await sb.from('recompensa').update(r).eq('id', r.id).select().single());
+      return ok(await sb.from('recompensa').insert(r).select().single());
+    },
+
+    // ---- plano da semana (semana = segunda-feira, AAAA-MM-DD)
+    async semanaRecompensas(semana) {
+      return ok(await sb.from('semana_recompensa').select('recompensa_id').eq('semana', semana)).map((x) => x.recompensa_id);
+    },
+    async marcarRecompensaSemana(semana, recompensaId, quer) {
+      if (quer) ok(await sb.from('semana_recompensa').upsert({ semana, recompensa_id: recompensaId }, { onConflict: 'semana,recompensa_id' }));
+      else ok(await sb.from('semana_recompensa').delete().eq('semana', semana).eq('recompensa_id', recompensaId));
+    },
+    async semanaEventos(semana) {
+      return ok(await sb.from('semana_evento').select('*').eq('semana', semana).order('data', { nullsFirst: false }));
+    },
+    async adicionarEvento(ev) {
+      return ok(await sb.from('semana_evento').insert(ev).select().single());
+    },
+    async marcarEventoRealizado(id, realizado = true) {
+      ok(await sb.from('semana_evento').update({ realizado }).eq('id', id));
+    },
+    async excluirEvento(id) {
+      ok(await sb.from('semana_evento').delete().eq('id', id));
+    },
+    async compromissos(semana) {
+      return ok(await sb.from('compromisso_progresso').select('*').eq('semana', semana).order('criado_em'));
+    },
+    async adicionarCompromisso(c) {
+      return ok(await sb.from('semana_compromisso').insert(c).select().single());
+    },
+    async excluirCompromisso(id) {
+      ok(await sb.from('semana_compromisso').delete().eq('id', id));
+    },
+
+    // ---- conselheiro: a função conselheiro gera sugestões com o Claude a partir das metas e do histórico
+    async sugestoes(semana) {
+      return ok(await sb.from('sugestao').select('*').eq('semana', semana).eq('status', 'nova').order('criado_em', { ascending: false }));
+    },
+    async gerarSugestoes(forcar = false) {
+      const { data, error } = await sb.functions.invoke('conselheiro', { body: { forcar } });
+      if (error) {
+        let msg = 'O conselheiro não respondeu agora.';
+        try { const corpo = await error.context.json(); if (corpo && corpo.erro) msg = corpo.erro; } catch { /* corpo não é JSON */ }
+        throw new Error(msg);
+      }
+      return data;
+    },
+    async aplicarSugestao(s) {
+      const a = s.acao || {};
+      if (a.tipo === 'compromisso') {
+        ok(await sb.from('semana_compromisso').insert({
+          semana: s.semana, titulo: a.titulo || s.titulo, tipo: a.tipo_compromisso, alvo: a.alvo, parametros: a.parametros || {}, meta_id: s.meta_id,
+        }));
+      }
+      ok(await sb.from('sugestao').update({ status: 'aplicada' }).eq('id', s.id));
+    },
+    async dispensarSugestao(id) {
+      ok(await sb.from('sugestao').update({ status: 'dispensada' }).eq('id', id));
+    },
+
     // A regra de saldo mora no servidor: se recusar, a mensagem do Postgres sobe como erro
     async trocar({ nome, kcal = 0, reais = 0, min = 0, recompensa = null }) {
       return ok(await sb.rpc('trocar', { p_nome: nome, p_kcal: kcal, p_reais: reais, p_min: min, p_recompensa: recompensa }));

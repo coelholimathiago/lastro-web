@@ -10,6 +10,9 @@ const TELAS = {
   registrar: () => import('./telas/registrar.js'),
   ajustes: () => import('./telas/ajustes.js'),
   login: () => import('./telas/login.js'),
+  semana: () => import('./telas/semana.js'),
+  metas: () => import('./telas/metas.js'),
+  recompensa: () => import('./telas/recompensa.js'),
 };
 
 // ------------------------------------------------------------ tema
@@ -47,8 +50,8 @@ const NAV = [
   { nome: 'inicio', rot: 'Início', icone: ic.casa },
   { nome: 'dia', rot: 'Dia', icone: ic.dia },
   { nome: 'liberar', rot: 'Liberar', icone: ic.aberto, centro: true },
-  { nome: 'registrar', rot: 'Registrar', icone: ic.registrar },
-  { nome: 'ajustes', rot: 'Ajustes', icone: ic.ajustes },
+  { nome: 'semana', rot: 'Semana', icone: ic.semana },
+  { nome: 'metas', rot: 'Metas', icone: ic.alvo },
 ];
 
 function desenharNav(ativa) {
