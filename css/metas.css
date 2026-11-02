@@ -200,3 +200,8 @@
 
 /* atalho de pesagem dentro do card de peso */
 .meta-card .meta-registrar { background: var(--card); border-color: transparent; min-height: 48px; }
+
+/* metas financeiras: aporte ou pagamento direto no card */
+.meta-aporte { display: flex; gap: 8px; align-items: flex-end; }
+.meta-aporte .campo input { min-height: 44px; }
+.meta-aporte .btn { min-height: 44px; white-space: nowrap; }

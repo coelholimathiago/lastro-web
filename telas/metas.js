@@ -2,7 +2,7 @@
 // progresso, ritmo que o prazo pede e as recompensas que ela libera. Rotas: #/metas?h=3m|6m|12m,
 // #/metas/nova?h=… e #/metas/editar?id=…  Contrato: supabase/migrations/0004_metas_semana_recompensas.sql.
 
-import { hojeBR, addDias, dataLonga, dataCurta, esc, ic, anel, barra, linha, fmt, clamp01, pct, lerNumero, MENOS } from '../ui.js';
+import { hojeBR, addDias, dataLonga, dataCurta, esc, ic, anel, barra, linha, fmt, fReais, clamp01, pct, lerNumero, MENOS } from '../ui.js';
 import { cartoesConselheiro, ligarConselheiro } from './conselheiro.js';
 
 const HORIZONTES = [
@@ -17,7 +17,10 @@ const TIPOS = {
   treinos_semana: { cls: 'hab', nome: 'Treinos por semana', fonte: 'Garmin', icone: ic.relogioPulso, un: 'treinos' },
   minutos_semana: { cls: 'tmp', nome: 'Minutos por semana', fonte: 'tempo produtivo', icone: ic.relogio, un: 'min' },
   contagem: { cls: 'din', nome: 'Contagem', fonte: 'você conta', icone: ic.check, un: '' },
+  juntar: { cls: 'din', nome: 'Juntar dinheiro', fonte: 'aportes registrados', icone: ic.cofre, un: 'R$' },
+  quitar: { cls: 'din', nome: 'Quitar dívida', fonte: 'pagamentos registrados', icone: ic.cofre, un: 'R$' },
 };
+const FINANCEIRA = (tipo) => tipo === 'juntar' || tipo === 'quitar';
 
 const MESES_C = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 const KCAL_POR_KG = 7700;
@@ -124,7 +127,7 @@ ${listaLib.length ? `<div class="metas-resumo-lib"><span class="nota">${listaLib
   const vazio = metas.length
     ? `<section class="card metas-vazio"><p class="nota" style="margin:0">Nenhuma meta de ${hzInfo.rot === '1 ano' ? '1 ano' : hzInfo.rot} ainda.</p></section>`
     : `<section class="card hab metas-vazio"><div class="card-cab"><h2>${ic.alvo(18)}Nenhuma meta ainda</h2></div>
-<p class="nota" style="margin:0;color:var(--ink)">Uma meta de 3 meses é um bom começo: peso, treinos por semana, horas num projeto ou uma contagem (livros, por exemplo).</p></section>`;
+<p class="nota" style="margin:0;color:var(--ink)">Uma meta de 3 meses é um bom começo: peso, treinos por semana, horas num projeto, uma contagem (livros, por exemplo), juntar dinheiro ou quitar uma dívida.</p></section>`;
   const novaRot = { '3m': 'Nova meta de 3 meses', '6m': 'Nova meta de 6 meses', '12m': 'Nova meta de 1 ano' }[hz];
 
   // ---- conselheiro: primeiro o que fala de meta
@@ -198,6 +201,13 @@ ${cumprida ? `<span class="meta-pilula ok">${ic.check(14)}Cumprida</span>` : `<s
   } else if (m.tipo === 'minutos_semana') {
     deTxt = atual === null ? '—' : fMin(atual); paraTxt = fMin(alvo);
     legenda = 'média por semana nas últimas 4 → toda semana';
+  } else if (m.tipo === 'juntar') {
+    deTxt = fReais(atual || 0); paraTxt = fReais(alvo);
+    legenda = 'guardado até hoje → quanto quer ter';
+  } else if (m.tipo === 'quitar') {
+    deTxt = fReais(atual || 0); paraTxt = fReais(alvo);
+    const saldo = Math.max(0, (Number(m.valor_inicial) || 0) - (atual || 0));
+    legenda = `pago até hoje → quanto quer quitar · saldo devedor agora ${fReais(saldo)}`;
   } else {
     deTxt = atual === null ? '0' : fmt(atual, atual % 1 ? 1 : 0); paraTxt = fmt(alvo, alvo % 1 ? 1 : 0); unTxt = unidade;
     legenda = 'feito → onde quer chegar';
@@ -223,6 +233,15 @@ ${cumprida ? `<span class="meta-pilula ok">${ic.check(14)}Cumprida</span>` : `<s
 
   // escada de treinos
   if (m.tipo === 'treinos_semana' && !cumprida) html += escada(m, H);
+
+  // financeiras: registrar aporte ou pagamento direto no card
+  if (FINANCEIRA(m.tipo) && !cumprida) {
+    const rot = m.tipo === 'juntar' ? 'Registrar aporte' : 'Registrar pagamento';
+    html += `<form class="meta-aporte" data-aporte novalidate>
+<label class="campo" style="flex:1">${rot} (R$)<input name="valor" type="text" inputmode="decimal" placeholder="500" autocomplete="off"></label>
+<button type="submit" class="btn primario">${ic.mais(16)}Somar</button>
+</form>`;
+  }
 
   // peso: gráfico e tendência
   if (m.tipo === 'peso') html += blocoPesoGrafico(m, c) + `<a class="btn largo meta-registrar" href="#/registrar?tipo=peso">${ic.peso(18)}Registrar peso</a>`;
@@ -263,6 +282,8 @@ function medeTxt(m) {
   if (m.tipo === 'peso') return 'média 7 dias';
   if (m.tipo === 'treinos_semana') return 'Garmin, 4 semanas';
   if (m.tipo === 'minutos_semana') return 'tempo registrado';
+  if (m.tipo === 'juntar') return 'aportes registrados';
+  if (m.tipo === 'quitar') return 'pagamentos registrados';
   return 'botões −1 e +1';
 }
 
@@ -282,6 +303,11 @@ function pedeTxt(m, atual, alvo) {
     return a >= alvo ? 'manter o ritmo' : `+${fT(alvo - a)} por semana`;
   }
   if (m.tipo === 'minutos_semana') return `≈ ${fMin(alvo / 7)} por dia`;
+  if (FINANCEIRA(m.tipo)) {
+    const falta = alvo - (atual || 0);
+    if (falta <= 0) return 'alvo atingido';
+    return `≈ ${fReais(Math.ceil(falta / Math.max(1, dias / 30)))} por mês`;
+  }
   const resto = alvo - (atual || 0);
   if (resto <= 0) return 'alvo atingido';
   const porSem = resto / semanas;
@@ -516,21 +542,27 @@ function notaTipo(tipo) {
     treinos_semana: 'Mede pela média de treinos das últimas 4 semanas no Garmin, fora caminhada e treinos com menos de 20 min.',
     minutos_semana: 'Mede pela média semanal do tempo registrado nas últimas 4 semanas.',
     contagem: 'Você conta com os botões −1 e +1 no card da meta.',
+    juntar: 'Patrimônio subindo: cada aporte que você registra no card soma ao que já tinha guardado.',
+    quitar: 'Dívida caindo: cada pagamento que você registra no card abate do saldo devedor.',
   }[tipo];
 }
 function rotInicial(tipo) {
-  return { peso: 'Peso hoje (kg)', treinos_semana: 'Treinos por semana hoje', minutos_semana: 'Minutos por semana hoje', contagem: 'Já feito' }[tipo];
+  return { peso: 'Peso hoje (kg)', treinos_semana: 'Treinos por semana hoje', minutos_semana: 'Minutos por semana hoje', contagem: 'Já feito',
+    juntar: 'Já guardado (R$)', quitar: 'Saldo devedor hoje (R$)' }[tipo];
 }
 function rotAlvo(tipo) {
-  return { peso: 'Peso alvo (kg)', treinos_semana: 'Treinos por semana', minutos_semana: 'Minutos por semana', contagem: 'Quantos no total' }[tipo];
+  return { peso: 'Peso alvo (kg)', treinos_semana: 'Treinos por semana', minutos_semana: 'Minutos por semana', contagem: 'Quantos no total',
+    juntar: 'Quero chegar a (R$)', quitar: 'Quanto quer quitar (R$)' }[tipo];
 }
 function notaInicial(tipo, media, editar) {
   if (tipo === 'peso') return media !== null ? `Preenchido com a média de 7 dias de hoje: ${n1(media)} kg. O progresso conta a partir daqui.` : 'Sem pesagem recente: informe o peso de hoje. O progresso conta a partir dele.';
   if (tipo === 'contagem') return editar ? 'A contagem anda pelos botões do card.' : 'Se já começou, a contagem parte daqui.';
+  if (tipo === 'juntar') return 'O que já tem guardado hoje; os aportes somam a partir daqui.';
+  if (tipo === 'quitar') return 'O saldo devedor de hoje. Para quitar tudo, use o mesmo valor no alvo.';
   return 'Opcional: só para lembrar de onde partiu. O progresso vem dos dados.';
 }
 
-const PADRAO_UN = { peso: 'kg', treinos_semana: 'treinos', minutos_semana: 'min', contagem: '' };
+const PADRAO_UN = { peso: 'kg', treinos_semana: 'treinos', minutos_semana: 'min', contagem: '', juntar: 'R$', quitar: 'R$' };
 
 function ligarForm(raiz, { api, ir, toast }) {
   const form = raiz.querySelector('#form-meta');
@@ -577,7 +609,7 @@ function ligarForm(raiz, { api, ir, toast }) {
     const campo = form[p.dataset.passo];
     if (campo.readOnly) return;
     const tipo = (form.querySelector('input[name="tipo"]:checked') || {}).value;
-    const passo = tipo === 'peso' ? 0.1 : tipo === 'minutos_semana' ? 15 : 1;
+    const passo = tipo === 'peso' ? 0.1 : tipo === 'minutos_semana' ? 15 : FINANCEIRA(tipo) ? 100 : 1;
     const base = lerNumero(campo.value);
     const atual = Number.isFinite(base) ? base : (p.dataset.passo === 'alvo' && tipo === 'peso' && mediaAtual !== null ? mediaAtual : 0);
     const novo = Math.max(0, Math.round((atual + passo * Number(p.dataset.delta)) * 10) / 10);
@@ -607,6 +639,11 @@ function ligarForm(raiz, { api, ir, toast }) {
       if (vi < 30 || vi > 300) return falha('O peso de hoje precisa estar entre 30 e 300 kg.');
       if (Math.abs(vi - alvo) < 0.05) return falha('O alvo é igual ao peso de hoje.');
     }
+    if (tipo === 'quitar') {
+      if (vi === null || vi <= 0) return falha('Informe o saldo devedor de hoje.');
+      if (alvo > vi) return falha('O valor a quitar não pode passar do saldo devedor.');
+    }
+    if (tipo === 'juntar' && vi !== null && vi >= alvo) return falha('O alvo precisa ser maior do que já está guardado.');
     const linhaMeta = {
       titulo, horizonte, tipo, prazo,
       atividade_id: tipo === 'minutos_semana' ? (form.atividade_id.value || null) : null,
@@ -653,6 +690,23 @@ export function ligar(raiz, ctx) {
   if (rota.arg === 'nova' || rota.arg === 'editar') { ligarForm(raiz, ctx); return; }
 
   raiz.querySelectorAll('[data-hz]').forEach((b) => b.addEventListener('click', () => ir(`#/metas?h=${b.dataset.hz}`)));
+
+  raiz.querySelectorAll('[data-aporte]').forEach((f) => f.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const id = f.closest('[data-meta]').dataset.meta;
+    const valor = lerNumero(f.valor.value);
+    if (!Number.isFinite(valor) || valor <= 0) { toast('Informe o valor em reais.', 'erro'); return; }
+    const btn = f.querySelector('[type="submit"]');
+    btn.disabled = true;
+    try {
+      await api.registrarAporte(id, Math.round(valor * 100) / 100);
+      toast('Somado à meta');
+      recarregar();
+    } catch (e) {
+      toast(e.message || String(e), 'erro');
+      btn.disabled = false;
+    }
+  }));
 
   raiz.querySelectorAll('[data-meta-acao]').forEach((b) => b.addEventListener('click', async () => {
     const id = b.closest('[data-meta]').dataset.meta;

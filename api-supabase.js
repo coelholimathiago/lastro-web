@@ -137,6 +137,10 @@ export async function criar(url, chave) {
       if (m.id) return ok(await sb.from('meta').update(m).eq('id', m.id).select().single());
       return ok(await sb.from('meta').insert(m).select().single());
     },
+    // metas financeiras: aporte (juntar) ou pagamento (quitar)
+    async registrarAporte(metaId, valor, data = hojeBR()) {
+      ok(await sb.from('aporte').insert({ meta_id: metaId, valor, data }));
+    },
     async somarContagem(id, delta) {
       const atual = ok(await sb.from('meta').select('contagem_atual').eq('id', id).single());
       ok(await sb.from('meta').update({ contagem_atual: Math.max(0, Number(atual.contagem_atual) + delta) }).eq('id', id));
