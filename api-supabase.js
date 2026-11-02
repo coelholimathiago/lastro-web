@@ -137,6 +137,32 @@ export async function criar(url, chave) {
       if (m.id) return ok(await sb.from('meta').update(m).eq('id', m.id).select().single());
       return ok(await sb.from('meta').insert(m).select().single());
     },
+    // ---- plano financeiro guiado (docs/plano-financeiro.md)
+    async planos() {
+      return ok(await sb.from('plano_financeiro').select('*').neq('status', 'arquivado').order('criado_em', { ascending: false }));
+    },
+    async plano(id) {
+      return ok(await sb.from('plano_financeiro').select('*').eq('id', id).maybeSingle());
+    },
+    async salvarPlano(p) {
+      if (p.id) return ok(await sb.from('plano_financeiro').update(p).eq('id', p.id).select().single());
+      return ok(await sb.from('plano_financeiro').insert(p).select().single());
+    },
+    async aplicarPlano(id) {
+      return ok(await sb.rpc('aplicar_plano', { p_plano: id }));
+    },
+    async planoIA(corpo) {
+      const { data, error } = await sb.functions.invoke('plano-financeiro', { body: corpo });
+      if (error) {
+        let msg = 'A IA não respondeu agora.';
+        try { const c = await error.context.json(); if (c && c.erro) msg = c.erro; } catch { /* corpo não é JSON */ }
+        throw new Error(msg);
+      }
+      return data;
+    },
+    interpretarResposta(passo, texto, respostas) { return this.planoIA({ acao: 'interpretar', passo, texto, respostas }); },
+    resumirPlano(respostas, simulacao) { return this.planoIA({ acao: 'resumir', respostas, simulacao }); },
+
     // metas financeiras: aporte (juntar) ou pagamento (quitar)
     async registrarAporte(metaId, valor, data = hojeBR()) {
       ok(await sb.from('aporte').insert({ meta_id: metaId, valor, data }));

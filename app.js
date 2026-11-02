@@ -13,6 +13,7 @@ const TELAS = {
   semana: () => import('./telas/semana.js'),
   metas: () => import('./telas/metas.js'),
   recompensa: () => import('./telas/recompensa.js'),
+  plano: () => import('./telas/plano.js'),
 };
 
 // ------------------------------------------------------------ tema

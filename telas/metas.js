@@ -81,14 +81,16 @@ export async function montar(ctx) {
 async function montarLista({ api, rota }, H) {
   const semana = segundaDe(H);
   const opcional = (p, vazio) => (p ? p.catch(() => vazio) : Promise.resolve(vazio));
-  const [metas, recompensas, pesos, sugestoes, compromissos, atividades] = await Promise.all([
+  const [metas, recompensas, pesos, sugestoes, compromissos, atividades, planos] = await Promise.all([
     api.metas(),
     opcional(api.recompensasStatus && api.recompensasStatus(), []),
     opcional(api.pesoMedia && api.pesoMedia(addDias(H, -60), H), []),
     opcional(api.sugestoes && api.sugestoes(semana), []),
     opcional(api.compromissos && api.compromissos(semana), []),
     opcional(api.atividades && api.atividades(), []),
+    opcional(api.planos && api.planos(), []),
   ]);
+  const planoAplicado = (planos || []).find((p) => p.status === 'aplicado');
 
   const ativas = metas.filter((m) => m.status === 'ativa');
   const porHz = Object.fromEntries(HORIZONTES.map((h) => [h.id, metas.filter((m) => m.horizonte === h.id)]));
@@ -141,6 +143,7 @@ ${listaLib.length ? `<div class="metas-resumo-lib"><span class="nota">${listaLib
   return `<div class="tela metas-tela">
 <div class="topo"><div><span class="quando">${esc(dataLonga(H))}</span><h1>Metas</h1></div>
 <a class="btn primario metas-nova-topo" href="#/metas/nova?h=${hz}">${ic.mais(16)}Nova meta</a></div>
+${planoAplicado ? cardPlano(planoAplicado) : ''}
 ${resumo}
 ${seletor}
 <div class="metas-lista">${cards || vazio}
@@ -150,6 +153,35 @@ ${conselho}
 }
 
 let sugsAtuais = [];
+
+// ------------------------------------------------------------ plano financeiro (telas/plano.js)
+
+// card do plano aplicado no topo da lista: 2 tópicos do resumo da IA (ou os números da simulação)
+function cardPlano(p) {
+  const r = p.resumo || {};
+  let topicos = [...(r.regras || []), ...(r.diagnostico || [])].filter(Boolean).slice(0, 2);
+  if (!topicos.length) {
+    const k = (p.simulacao || {}).kpis || {};
+    const mc = (m) => (m ? `${MESES_C[Number(m.slice(5, 7)) - 1]}/${m.slice(2, 4)}` : '');
+    topicos = [
+      k.variavel_alvo ? `Variável de ${fReais(k.variavel_alvo)} por mês depois dos degraus.` : null,
+      k.recompor_mes ? `Investimentos de volta em ${mc(k.recompor_mes)}.` : null,
+    ].filter(Boolean);
+  }
+  const dia = p.aplicado_em
+    ? new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(p.aplicado_em))
+    : null;
+  return `<a class="pl-metas-plano" href="#/plano/ver?id=${encodeURIComponent(p.id)}">
+<div class="card-cab"><h2>${ic.cofre(18)}Plano financeiro</h2><span class="lado">${dia ? `aplicado em ${Number(dia.slice(8, 10))} ${MESES_C[Number(dia.slice(5, 7)) - 1]}` : 'aplicado'}</span></div>
+${topicos.length ? `<ul class="pl-topicos-lista">${topicos.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
+<span class="pl-metas-ver">Ver plano${ic.seta(16)}</span></a>`;
+}
+
+// destaque em Nova meta: a entrevista guiada
+const destaquePlano = () => `<a class="pl-destaque" href="#/plano/novo">
+<span class="pl-destaque-ico">${ic.brilho(20)}</span>
+<span class="pl-destaque-txt"><b>Plano financeiro com IA</b><span>Responda 10 perguntas e receba um plano</span></span>${ic.seta(18)}</a>
+<p class="pl-ou">ou crie uma meta avulsa</p>`;
 
 function semanasTxt(dias) {
   const d = Number(dias);
@@ -491,6 +523,7 @@ async function montarForm({ api, rota }, H) {
   return `<div class="tela metas-form">
 <div class="topo"><div><span class="quando">${esc(dataLonga(H))}</span><h1>${editar ? 'Editar meta' : 'Nova meta'}</h1></div>
 <a class="btn-icone" href="${voltar}" aria-label="Fechar e voltar para metas">${ic.x(18)}</a></div>
+${editar ? '' : destaquePlano()}
 <form id="form-meta" class="tela" novalidate>
 <label class="campo">Título<input name="titulo" type="text" required maxlength="80" value="${esc(m.titulo)}" placeholder="Emagrecer 3 kg" autocomplete="off"></label>
 
